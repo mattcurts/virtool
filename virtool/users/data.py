@@ -343,7 +343,6 @@ class UsersData(DataLayerDomain):
 
         return user
 
-    # TODO: Update this one to use both_transactions
     @emits(Operation.UPDATE)
     async def update(self, user_id: str, data: UpdateUserRequest):
         """

@@ -224,11 +224,11 @@ class TestCreate:
         async with (AsyncSession(pg) as session):
             row = await session.get(SQLUser, 1)
 
-            assert row.to_dict() == snapshot(
-                name="pg",
-                exclude=props("password"),
-                matcher=_last_password_change_matcher,
-            )
+        assert row.to_dict() == snapshot(
+            name="pg",
+            exclude=props("password"),
+            matcher=_last_password_change_matcher,
+        )
 
         doc = await mongo.users.find_one({"_id": user.id})
         assert doc == snapshot(
@@ -302,6 +302,7 @@ class TestUpdate:
             user = await data_layer.users.update(
                 user.id, UpdateUserRequest(force_reset=True)
             )
+
         async with (AsyncSession(pg) as session):
             row = await session.get(SQLUser, 1)
             assert user.force_reset is True
@@ -310,6 +311,7 @@ class TestUpdate:
             user = await data_layer.users.update(
                 user.id, UpdateUserRequest(force_reset=False)
             )
+
         async with (AsyncSession(pg) as session):
             row = await session.get(SQLUser, 1)
             assert user.force_reset is False
