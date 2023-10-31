@@ -11,8 +11,8 @@ from virtool.pg.base import Base
 user_group_associations = Table(
     "user_group_associations",
     Base.metadata,
-    Column("user_id", ForeignKey("users.id")),
-    Column("group_id", ForeignKey("groups.id")),
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE")),
+    Column("group_id", ForeignKey("groups.id", ondelete="CASCADE")),
 )
 
 
@@ -38,6 +38,3 @@ class SQLUser(Base):
 
     primary_group_id: Mapped[int | None] = mapped_column(ForeignKey("groups.id"))
     primary_group: Mapped[SQLGroup | None] = relationship()
-
-    # TODO: setting relationship
-    # TODO: Test that groups works

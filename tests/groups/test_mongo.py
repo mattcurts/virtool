@@ -17,11 +17,6 @@ async def test_update_member_users_and_api_keys(
     user = await fake2.users.create(groups=[group_1, group_2])
 
     async with AsyncSession(pg) as session:
-        await session.execute(
-            delete(user_group_associations).where(
-                user_group_associations.c.group_id == group_2.id
-            )
-        )
         await session.execute(delete(SQLGroup).where(SQLGroup.id == group_2.id))
         await session.commit()
 
