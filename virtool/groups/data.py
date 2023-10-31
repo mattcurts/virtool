@@ -151,20 +151,6 @@ class GroupsData:
             mongo_session,
             pg_session,
         ):
-            # Check if the group is associated with any users
-            user_associations = await pg_session.execute(
-                select(user_group_associations).where(
-                    user_group_associations.c.group_id == group_id
-                )
-            )
-
-            if user_associations:
-                # If the group is associated with any users, remove the associations
-                await pg_session.execute(
-                    delete(user_group_associations).where(
-                        user_group_associations.c.group_id == group_id
-                    )
-                )
             result = await pg_session.execute(
                 delete(SQLGroup).where(SQLGroup.id == group_id)
             )

@@ -344,8 +344,8 @@ class TestUpdate:
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
                 select(user_group_associations)
-                .join(SQLUser)
                 .where(user_group_associations.c.user_id == SQLUser.id)
+                .join(SQLUser)
             )
         assert groups.mappings().all() == []
         assert user.groups == []
