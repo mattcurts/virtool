@@ -28,7 +28,7 @@ class SQLUser(Base):
     b2c_given_name: Mapped[str] = ""
     b2c_family_name: Mapped[str] = ""
     b2c_oid: Mapped[str] = ""
-    force_reset: Mapped[bool] = Column(Boolean, default=False)
+    force_reset: Mapped[bool] = mapped_column(Boolean, default=False)
     handle: Mapped[str]
     invalidate_sessions: Mapped[bool] = False
     last_password_change: Mapped[datetime]
