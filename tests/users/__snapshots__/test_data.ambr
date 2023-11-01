@@ -49,10 +49,16 @@
 # ---
 # name: TestCreate.test_create_first[pg]
   dict({
+    'active': True,
     'administrator': True,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'bill',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -108,10 +114,16 @@
 # ---
 # name: TestCreate.test_force_reset[False][pg]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'bill',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -167,10 +179,16 @@
 # ---
 # name: TestCreate.test_force_reset[True][pg]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': True,
     'handle': 'bill',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -226,10 +244,16 @@
 # ---
 # name: TestCreate.test_no_force_reset[pg]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'bill',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -257,10 +281,16 @@
 # ---
 # name: TestDelete.test_delete[pg]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'bill',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -308,10 +338,16 @@
 # ---
 # name: TestDelete.test_delete_all[pg_1]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'bill',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -319,10 +355,16 @@
 # ---
 # name: TestDelete.test_delete_all[pg_2]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'john',
     'id': 2,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'fb085f7f',
     'primary_group_id': None,
@@ -379,10 +421,16 @@
 # ---
 # name: TestUpdate.test_administrator[False][pg]
   dict({
+    'active': True,
     'administrator': True,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'leeashley',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -439,10 +487,16 @@
 # ---
 # name: TestUpdate.test_administrator[True][pg]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'leeashley',
     'id': 1,
+    'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
@@ -499,10 +553,16 @@
 # ---
 # name: TestUpdate.test_password[pg]
   dict({
+    'active': True,
     'administrator': False,
+    'b2c_display_name': '',
+    'b2c_family_name': '',
+    'b2c_given_name': '',
+    'b2c_oid': '',
     'force_reset': False,
     'handle': 'bob',
     'id': 1,
+    'invalidate_sessions': True,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
     'primary_group_id': None,
