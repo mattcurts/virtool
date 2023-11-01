@@ -20,19 +20,18 @@ class SQLUser(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    legacy_id: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
-    active: Mapped[bool] = True
-    administrator: Mapped[bool] = Column(Boolean, default=False)
-    force_reset: Mapped[bool]
-    b2c_display_name: Mapped[str] = ""
-    b2c_given_name: Mapped[str] = ""
-    b2c_family_name: Mapped[str] = ""
-    b2c_oid: Mapped[str] = ""
-    force_reset: Mapped[bool] = mapped_column(Boolean, default=False)
+    legacy_id: Mapped[str | None] = mapped_column(unique=True)
+    active: Mapped[bool] = mapped_column(default=True)
+    administrator: Mapped[bool] = mapped_column(default=False)
+    b2c_display_name: Mapped[str] = mapped_column(default="")
+    b2c_given_name: Mapped[str] = mapped_column(default="")
+    b2c_family_name: Mapped[str] = mapped_column(default="")
+    b2c_oid: Mapped[str] = mapped_column(default="")
+    force_reset: Mapped[bool] = mapped_column(default=False)
     handle: Mapped[str]
-    invalidate_sessions: Mapped[bool] = False
+    invalidate_sessions: Mapped[bool] = mapped_column(default=False)
     last_password_change: Mapped[datetime]
-    password: Mapped[bytes] = mapped_column(nullable=True)
+    password: Mapped[bytes | None]
 
     groups: Mapped[list[SQLGroup]] = relationship(secondary=user_group_associations)
 
