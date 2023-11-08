@@ -568,30 +568,23 @@
     'primary_group_id': None,
   })
 # ---
-# name: TestUpdate.test_set_groups[groups]
-  list([
-    {'user_id': 1, 'group_id': 2},
-    {'user_id': 1, 'group_id': 2},
-    {'user_id': 1, 'group_id': 1},
-  ])
-# ---
 # name: TestUpdate.test_set_groups[groups_1]
   list([
-    {'user_id': 1, 'group_id': 2},
   ])
 # ---
 # name: TestUpdate.test_set_groups[groups_2]
   list([
     {'user_id': 1, 'group_id': 2},
-    {'user_id': 1, 'group_id': 2},
-    {'user_id': 1, 'group_id': 1},
   ])
 # ---
 # name: TestUpdate.test_set_groups[groups_3]
   list([
     {'user_id': 1, 'group_id': 2},
-    {'user_id': 1, 'group_id': 2},
     {'user_id': 1, 'group_id': 1},
+  ])
+# ---
+# name: TestUpdate.test_set_groups[groups_4]
+  list([
   ])
 # ---
 # name: TestUpdate.test_set_groups[mongo_1]

@@ -57,62 +57,6 @@ class TestDelete:
         assert row == doc
         assert row is None
 
-    async def test_delete_all(
-        self,
-        data_layer: DataLayer,
-        pg: AsyncEngine,
-        mongo: Mongo,
-        snapshot: SnapshotAssertion,
-    ):
-        # Create multiple users
-        user1 = await data_layer.users.create(password="hello_world", handle="bill")
-        user2 = await data_layer.users.create(password="hello_world", handle="john")
-
-        async with (AsyncSession(pg) as session):
-            row1 = await session.get(SQLUser, 1)
-            row2 = await session.get(SQLUser, 2)
-
-            assert row1.to_dict() == snapshot(
-                name="pg_1",
-                exclude=props("password"),
-                matcher=_last_password_change_matcher,
-            )
-            assert row2.to_dict() == snapshot(
-                name="pg_2",
-                exclude=props("password"),
-                matcher=_last_password_change_matcher,
-            )
-
-        doc1 = await mongo.users.find_one({"_id": user1.id})
-        doc2 = await mongo.users.find_one({"_id": user2.id})
-
-        assert doc1 == snapshot(
-            name="mongo_1",
-            exclude=props("password"),
-            matcher=_last_password_change_matcher,
-        )
-        assert doc2 == snapshot(
-            name="mongo_2",
-            exclude=props("password"),
-            matcher=_last_password_change_matcher,
-        )
-
-        # Delete all users
-        await data_layer.users.delete_all()
-
-        # Verify that all users have been deleted
-        row1 = await session.get(SQLUser, 1)
-        row2 = await session.get(SQLUser, 2)
-
-        assert row1 is None
-        assert row2 is None
-
-        doc1 = await mongo.users.find_one({"_id": user1.id})
-        doc2 = await mongo.users.find_one({"_id": user2.id})
-
-        assert doc1 is None
-        assert doc2 is None
-
 
 class TestCreate:
     async def test_no_force_reset(
@@ -335,6 +279,13 @@ class TestUpdate:
         user = await fake2.users.create()
         document = await mongo.users.find_one({"_id": user.id})
 
+        async with (AsyncSession(pg) as session):
+            groups = await session.execute(
+                select(user_group_associations)
+                .join(SQLUser)
+                .where(user_group_associations.c.user_id == SQLUser.id)
+            )
+        assert groups.mappings().all() == snapshot(name="groups_1")
         assert user == snapshot(name="obj_1", matcher=_last_password_change_matcher)
         assert document == snapshot(
             name="mongo_1",
@@ -361,7 +312,7 @@ class TestUpdate:
                 .join(SQLUser)
                 .where(user_group_associations.c.user_id == SQLUser.id)
             )
-        assert groups.mappings().all() == snapshot(name="groups_1")
+        assert groups.mappings().all() == snapshot(name="groups_2")
         assert user == snapshot(name="obj_2", matcher=_last_password_change_matcher)
         assert document == snapshot(
             name="mongo_2",
@@ -381,7 +332,7 @@ class TestUpdate:
                 .join(SQLUser)
                 .where(user_group_associations.c.user_id == SQLUser.id)
             )
-        assert groups.mappings().all() == snapshot(name="groups_2")
+        assert groups.mappings().all() == snapshot(name="groups_3")
         assert user == snapshot(name="obj_3", matcher=_last_password_change_matcher)
         assert document == snapshot(
             name="mongo_3",
@@ -401,7 +352,7 @@ class TestUpdate:
                 .join(SQLUser)
                 .where(user_group_associations.c.user_id == SQLUser.id)
             )
-        assert groups.mappings().all() == snapshot(name="groups_3")
+        assert groups.mappings().all() == snapshot(name="groups_4")
         assert user == snapshot(name="obj_4", matcher=_last_password_change_matcher)
         assert document == snapshot(
             name="mongo_4",

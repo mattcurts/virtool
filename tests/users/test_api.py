@@ -1,5 +1,9 @@
 import pytest
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncEngine
 from syrupy import SnapshotAssertion
+from virtool.data.topg import both_transactions
+from virtool.users.pg import SQLUser
 from virtool_core.models.enums import Permission
 from virtool_core.models.roles import SpaceSampleRole, SpaceReferenceRole
 
@@ -323,6 +327,8 @@ async def test_remove_permission(
 async def test_create_first_user(
     first_user_exists: bool,
     status: int,
+    mongo: Mongo,
+    pg: AsyncEngine,
     data_layer: DataLayer,
     snapshot: SnapshotAssertion,
     spawn_client: ClientSpawner,
@@ -334,7 +340,9 @@ async def test_create_first_user(
     client = await spawn_client()
 
     if not first_user_exists:
-        await data_layer.users.delete_all()
+        async with both_transactions(mongo, pg) as (mongo_session, pg_session):
+            await pg_session.execute(delete(SQLUser))
+            await mongo.users.delete_many({}, session=mongo_session)
 
     resp = await client.put(
         "/users/first", {"handle": "fred", "password": "hello_world"}

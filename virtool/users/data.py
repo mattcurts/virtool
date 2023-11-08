@@ -1,7 +1,8 @@
 import asyncio
 
 from pymongo.errors import DuplicateKeyError
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import select, update, delete, insert, column
+from sqlalchemy.event import remove
 from sqlalchemy.ext.asyncio import AsyncEngine
 from virtool_core.models.roles import AdministratorRole
 from virtool_core.models.user import User, UserSearchResult
@@ -173,8 +174,15 @@ class UsersData(DataLayerDomain):
         :param  b2c_user_attributes: Azure b2c user attributes used to describe a user
         :return: the user document
         """
-        async with both_transactions(self._mongo, self._pg) as (mongo, pg):
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
             now = virtool.utils.timestamp()
+            display_name = ""
+            given_name = ""
+            family_name = ""
+            oid = ""
 
             document = await create_user(
                 self._mongo,
@@ -182,26 +190,26 @@ class UsersData(DataLayerDomain):
                 password,
                 force_reset,
                 b2c_user_attributes=b2c_user_attributes,
-                session=mongo,
+                session=mongo_session,
             )
 
-            pg.add(
+            if b2c_user_attributes:
+                display_name = b2c_user_attributes.display_name
+                given_name = b2c_user_attributes.given_name
+                family_name = b2c_user_attributes.family_name
+                oid = b2c_user_attributes.oid
+
+            pg_session.add(
                 SQLUser(
                     legacy_id=document["_id"],
                     handle=handle,
                     password=document["password"] if password else None,
                     force_reset=force_reset,
                     last_password_change=now,
-                    b2c_display_name=b2c_user_attributes.display_name
-                    if b2c_user_attributes
-                    else "",
-                    b2c_given_name=b2c_user_attributes.given_name
-                    if b2c_user_attributes
-                    else "",
-                    b2c_family_name=b2c_user_attributes.family_name
-                    if b2c_user_attributes
-                    else "",
-                    b2c_oid=b2c_user_attributes.oid if b2c_user_attributes else "",
+                    b2c_display_name=display_name,
+                    b2c_given_name=given_name,
+                    b2c_family_name=family_name,
+                    b2c_oid=oid,
                 )
             )
 
@@ -211,21 +219,19 @@ class UsersData(DataLayerDomain):
         """
         Delete the user with the matching legacy_id.
 
-         :param legacy_id: legacy id of the user to delete
-         :return:
+        :param legacy_id: legacy id of the user to delete
+        :return:
         """
-        async with both_transactions(self._mongo, self._pg) as (mongo, pg):
-            await pg.execute(delete(SQLUser).where(SQLUser.legacy_id == legacy_id))
-            await self._mongo.users.delete_one({"_id": legacy_id}, session=mongo)
-
-    async def delete_all(self):
-        """
-        Delete all users.
-         :return:
-        """
-        async with both_transactions(self._mongo, self._pg) as (mongo, pg):
-            await pg.execute(delete(SQLUser))
-            await self._mongo.users.delete_many({}, session=mongo)
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
+            await pg_session.execute(
+                delete(SQLUser).where(SQLUser.legacy_id == legacy_id)
+            )
+            await self._mongo.users.delete_one(
+                {"_id": legacy_id}, session=mongo_session
+            )
 
     async def create_first(self, handle: str, password: str) -> User:
         """
@@ -241,25 +247,25 @@ class UsersData(DataLayerDomain):
         if handle == "virtool":
             raise ResourceConflictError("Reserved user name: virtool")
 
-        async with both_transactions(self._mongo, self._pg) as (mongo, pg):
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
             now = virtool.utils.timestamp()
 
             document = await create_user(
-                self._mongo, handle, password, False, session=mongo
+                self._mongo, handle, password, False, session=mongo_session
             )
-            await self._mongo.users.update_one(
-                {"_id": document["_id"]},
-                {"$set": {"administrator": True}},
-                session=mongo,
+
+            pg_session.add(
+                SQLUser(
+                    legacy_id=document["_id"],
+                    handle=handle,
+                    password=document["password"],
+                    force_reset=False,
+                    last_password_change=now,
+                )
             )
-            user = SQLUser(
-                legacy_id=document["_id"],
-                handle=handle,
-                password=document["password"],
-                force_reset=False,
-                last_password_change=now,
-            )
-            pg.add(user)
 
         await self.set_administrator_role(document["_id"], AdministratorRole.FULL)
 
@@ -314,9 +320,12 @@ class UsersData(DataLayerDomain):
         if not await id_exists(self._mongo.users, user_id):
             raise ResourceNotFoundError("User does not exist")
 
-        async with both_transactions(self._mongo, self._pg) as (mongo, pg):
-            await update_legacy_administrator(self._mongo, user_id, role, mongo)
-            await pg.execute(
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
+            await update_legacy_administrator(self._mongo, user_id, role, mongo_session)
+            await pg_session.execute(
                 update(SQLUser)
                 .where(SQLUser.legacy_id == user_id)
                 .values(administrator=role == AdministratorRole.FULL)
@@ -354,18 +363,21 @@ class UsersData(DataLayerDomain):
         :param data: the update data object
         :return: the updated user
         """
-        async with both_transactions(self._mongo, self._pg) as (mongo, pg):
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
             document = await self._mongo.users.find_one(
-                {"_id": user_id}, ["administrator", "groups"], session=mongo
+                {"_id": user_id}, ["administrator", "groups"], session=mongo_session
             )
 
             user = (
-                await pg.execute(
+                await pg_session.execute(
                     select(SQLUser).where(SQLUser.legacy_id == user_id).limit(1)
                 )
             ).scalar()
 
-            if document is None or user is None:
+            if document is None:
                 raise ResourceNotFoundError("User does not exist")
 
             data = data.dict(exclude_unset=True)
@@ -411,12 +423,30 @@ class UsersData(DataLayerDomain):
                     updates.update(
                         await compose_groups_update(self._pg, data["groups"])
                     )
-                    for _id in data["groups"]:
-                        await pg.execute(
-                            insert(user_group_associations).values(
-                                user_id=user.id, group_id=_id
+                    if user is not None:
+                        old_groups = (
+                            (
+                                await pg_session.execute(
+                                    select(user_group_associations.c.group_id).where(
+                                        user_group_associations.c.user_id == user.id
+                                    )
+                                )
                             )
+                            .scalars()
+                            .all()
                         )
+
+                    await pg_session.execute(
+                        delete(user_group_associations)
+                        .where(user_group_associations.c.user_id == user.id)
+                        .where(user_group_associations.c.group_id.in_(old_groups))
+                    )
+
+                    await pg_session.execute(
+                        insert(user_group_associations).values(
+                            [(user.id, _id) for _id in data["groups"]]
+                        )
+                    )
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
@@ -430,7 +460,7 @@ class UsersData(DataLayerDomain):
                         data["primary_group"],
                         user_id,
                     )
-                    await pg.execute(
+                    await pg_session.execute(
                         insert(user_group_associations).values(
                             user_id=user.id, group_id=data["primary_group"]
                         )
@@ -446,11 +476,11 @@ class UsersData(DataLayerDomain):
 
             if updates:
                 document = await self._mongo.users.find_one_and_update(
-                    {"_id": user_id}, {"$set": updates}, session=mongo
+                    {"_id": user_id}, {"$set": updates}, session=mongo_session
                 )
 
                 if document["groups"]:
-                    result = await pg.execute(
+                    result = await pg_session.execute(
                         select(SQLGroup).where(
                             compose_legacy_id_expression(SQLGroup, document["groups"])
                         )
@@ -466,7 +496,7 @@ class UsersData(DataLayerDomain):
                     document["administrator"],
                     document["groups"],
                     merge_group_permissions(groups),
-                    session=mongo,
+                    session=mongo_session,
                 )
         return await self.get(user_id)
 
