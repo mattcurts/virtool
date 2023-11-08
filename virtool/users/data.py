@@ -352,8 +352,7 @@ class UsersData(DataLayerDomain):
 
         return user
 
-    @emits(Operation.UPDATE)
-    async def update(self, user_id: str, data: UpdateUserRequest):
+    async def update_legacy(self, user_id: str, data: UpdateUserRequest):
         """
         Update a user.
 
@@ -371,11 +370,123 @@ class UsersData(DataLayerDomain):
                 {"_id": user_id}, ["administrator", "groups"], session=mongo_session
             )
 
+            if document is None:
+                raise ResourceNotFoundError("User does not exist")
+
+            data = data.dict(exclude_unset=True)
+
+            updates = {}
+
+            if "administrator" in data:
+                updates["administrator"] = data["administrator"]
+
+                role_assignment = AdministratorRoleAssignment(
+                    user_id, AdministratorRole.FULL
+                )
+
+                if data["administrator"]:
+                    await self._authorization_client.add(role_assignment)
+                else:
+                    await self._authorization_client.remove(role_assignment)
+
+            if "force_reset" in data:
+                updates.update(
+                    {
+                        "force_reset": data["force_reset"],
+                        "invalidate_sessions": True,
+                    }
+                )
+
+            if "password" in data:
+                hashedpass = virtool.users.utils.hash_password(data["password"])
+                timestamp = virtool.utils.timestamp()
+                updates.update(
+                    {
+                        "password": hashedpass,
+                        "last_password_change": timestamp,
+                        "invalidate_sessions": True,
+                    }
+                )
+
+            if "groups" in data:
+                try:
+                    updates.update(
+                        await compose_groups_update(self._pg, data["groups"])
+                    )
+
+                except DatabaseError as err:
+                    raise ResourceConflictError(str(err))
+
+            if "primary_group" in data:
+                try:
+                    primary_group = await compose_primary_group_update(
+                        self._mongo,
+                        self._pg,
+                        data.get("groups", []),
+                        data["primary_group"],
+                        user_id,
+                    )
+
+                except DatabaseError as err:
+                    raise ResourceConflictError(str(err))
+                updates.update(primary_group)
+
+            if "active" in data:
+                updates.update({"active": data["active"], "invalidate_sessions": True})
+
+            if updates:
+                document = await self._mongo.users.find_one_and_update(
+                    {"_id": user_id}, {"$set": updates}, session=mongo_session
+                )
+
+                if document["groups"]:
+                    result = await pg_session.execute(
+                        select(SQLGroup).where(
+                            compose_legacy_id_expression(SQLGroup, document["groups"])
+                        )
+                    )
+
+                    groups = [group.to_dict() for group in result.scalars().all()]
+                else:
+                    groups = []
+
+                await update_keys(
+                    self._mongo,
+                    user_id,
+                    document["administrator"],
+                    document["groups"],
+                    merge_group_permissions(groups),
+                    session=mongo_session,
+                )
+        return await self.get(user_id)
+
+    @emits(Operation.UPDATE)
+    async def update(self, user_id: str, data: UpdateUserRequest):
+        """
+        Update a user.
+
+        Sessions and API keys are updated as well.
+
+        :param user_id: the ID of the user to update
+        :param data: the update data object
+        :return: the updated user
+        """
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
             user = (
                 await pg_session.execute(
                     select(SQLUser).where(SQLUser.legacy_id == user_id).limit(1)
                 )
             ).scalar()
+
+            if user is None:
+                return await self.update_legacy(user_id, data)
+
+            document = await self._mongo.users.find_one(
+                {"_id": user_id}, ["administrator", "groups"], session=mongo_session
+            )
 
             if document is None:
                 raise ResourceNotFoundError("User does not exist")
@@ -423,23 +534,25 @@ class UsersData(DataLayerDomain):
                     updates.update(
                         await compose_groups_update(self._pg, data["groups"])
                     )
-                    if user is not None:
-                        old_groups = (
-                            (
-                                await pg_session.execute(
-                                    select(user_group_associations.c.group_id).where(
-                                        user_group_associations.c.user_id == user.id
-                                    )
-                                )
-                            )
-                            .scalars()
-                            .all()
-                        )
 
                     await pg_session.execute(
                         delete(user_group_associations)
                         .where(user_group_associations.c.user_id == user.id)
-                        .where(user_group_associations.c.group_id.in_(old_groups))
+                        .where(
+                            user_group_associations.c.group_id.in_(
+                                (
+                                    await pg_session.execute(
+                                        select(
+                                            user_group_associations.c.group_id
+                                        ).where(
+                                            user_group_associations.c.user_id == user.id
+                                        )
+                                    )
+                                )
+                                .scalars()
+                                .all()
+                            )
+                        )
                     )
 
                     await pg_session.execute(
@@ -460,6 +573,15 @@ class UsersData(DataLayerDomain):
                         data["primary_group"],
                         user_id,
                     )
+
+                    await pg_session.execute(
+                        delete(user_group_associations)
+                        .where(user_group_associations.c.user_id == user.id)
+                        .where(
+                            user_group_associations.c.group_id == user.primary_group_id
+                        )
+                    )
+
                     await pg_session.execute(
                         insert(user_group_associations).values(
                             user_id=user.id, group_id=data["primary_group"]
