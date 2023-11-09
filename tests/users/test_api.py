@@ -2,13 +2,13 @@ import pytest
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncEngine
 from syrupy import SnapshotAssertion
-from virtool.data.topg import both_transactions
-from virtool.users.pg import SQLUser
+from tests.fixtures.client import ClientSpawner
 from virtool_core.models.enums import Permission
 from virtool_core.models.roles import SpaceSampleRole, SpaceReferenceRole
 
-from tests.fixtures.client import ClientSpawner
 from virtool.authorization.relationships import UserRoleAssignment
+from virtool.data.topg import both_transactions
+from virtool.users.pg import SQLUser
 from virtool.data.layer import DataLayer
 from virtool.data.utils import get_data_from_app
 from virtool.fake.next import DataFaker

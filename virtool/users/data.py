@@ -1,8 +1,7 @@
 import asyncio
 
 from pymongo.errors import DuplicateKeyError
-from sqlalchemy import select, update, delete, insert, column
-from sqlalchemy.event import remove
+from sqlalchemy import select, update, delete, insert
 from sqlalchemy.ext.asyncio import AsyncEngine
 from virtool_core.models.roles import AdministratorRole
 from virtool_core.models.user import User, UserSearchResult
