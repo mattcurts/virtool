@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from pymongo.errors import DuplicateKeyError
 from sqlalchemy import select, update, delete, insert
@@ -554,11 +555,12 @@ class UsersData(DataLayerDomain):
                         )
                     )
 
-                    await pg_session.execute(
-                        insert(user_group_associations).values(
-                            [(user.id, _id) for _id in data["groups"]]
+                    if len(data["groups"]) > 0:
+                        await pg_session.execute(
+                            insert(user_group_associations).values(
+                                [(user.id, _id) for _id in data["groups"]]
+                            )
                         )
-                    )
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
