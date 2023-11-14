@@ -352,7 +352,7 @@ class UsersData(DataLayerDomain):
 
         return user
 
-    async def update_legacy(self, user_id: str, data: UpdateUserRequest):
+    async def update_mongo_only(self, user_id: str, data: UpdateUserRequest):
         """
         Update a user.
 
@@ -482,7 +482,7 @@ class UsersData(DataLayerDomain):
             ).scalar()
 
             if user is None:
-                return await self.update_legacy(user_id, data)
+                return await self.update_mongo_only(user_id, data)
 
             document = await self._mongo.users.find_one(
                 {"_id": user_id}, ["administrator", "groups"], session=mongo_session
