@@ -306,11 +306,13 @@ class UsersData(DataLayerDomain):
             mongo_session,
             pg_session,
         ):
-            await update_legacy_administrator(self._mongo, user_id, role, mongo_session)
-            await pg_session.execute(
-                update(SQLUser)
-                .where(SQLUser.legacy_id == user_id)
-                .values(administrator=role == AdministratorRole.FULL)
+            await asyncio.gather(
+                update_legacy_administrator(self._mongo, user_id, role, mongo_session),
+                pg_session.execute(
+                    update(SQLUser)
+                    .where(SQLUser.legacy_id == user_id)
+                    .values(administrator=role == AdministratorRole.FULL)
+                ),
             )
 
             if role is None:
