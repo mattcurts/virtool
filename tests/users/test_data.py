@@ -24,40 +24,6 @@ _last_password_change_matcher = path_type(
 )
 
 
-class TestDelete:
-    async def test_delete(
-        self,
-        data_layer: DataLayer,
-        pg: AsyncEngine,
-        mongo: Mongo,
-        snapshot: SnapshotAssertion,
-    ):
-        user = await data_layer.users.create(password="hello_world", handle="bill")
-
-        async with (AsyncSession(pg) as session):
-            row = await session.get(SQLUser, 1)
-
-            assert row.to_dict() == snapshot(
-                name="pg",
-                exclude=props("password"),
-                matcher=_last_password_change_matcher,
-            )
-
-        doc = await mongo.users.find_one({"_id": user.id})
-
-        assert doc == snapshot(
-            name="mongo",
-            exclude=props("password"),
-            matcher=_last_password_change_matcher,
-        )
-
-        await data_layer.users.delete(user.id)
-        row = await session.get(SQLUser, 1)
-        doc = await mongo.users.find_one({"_id": user.id})
-        assert row == doc
-        assert row is None
-
-
 class TestCreate:
     async def test_no_force_reset(
         self,

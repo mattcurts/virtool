@@ -215,24 +215,6 @@ class UsersData(DataLayerDomain):
 
         return await self.get(document["_id"])
 
-    async def delete(self, legacy_id: str):
-        """
-        Delete the user with the matching legacy_id.
-
-        :param legacy_id: legacy id of the user to delete
-        :return:
-        """
-        async with both_transactions(self._mongo, self._pg) as (
-            mongo_session,
-            pg_session,
-        ):
-            await pg_session.execute(
-                delete(SQLUser).where(SQLUser.legacy_id == legacy_id)
-            )
-            await self._mongo.users.delete_one(
-                {"_id": legacy_id}, session=mongo_session
-            )
-
     async def create_first(self, handle: str, password: str) -> User:
         """
         Create the first instance user.
