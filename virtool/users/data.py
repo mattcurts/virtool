@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 from pymongo.errors import DuplicateKeyError
 from sqlalchemy import select, update, delete, insert
