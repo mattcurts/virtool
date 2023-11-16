@@ -502,7 +502,7 @@ class UsersData(DataLayerDomain):
                     )
 
                     # gather current groups
-                    current_associations = (
+                    current_groups = (
                         (
                             await pg_session.execute(
                                 select(user_group_associations.c.group_id).where(
@@ -522,7 +522,7 @@ class UsersData(DataLayerDomain):
                             user_group_associations.c.group_id.in_(
                                 [
                                     assoc
-                                    for assoc in current_associations
+                                    for assoc in current_groups
                                     if assoc not in data["groups"]
                                 ]
                             )
@@ -537,7 +537,7 @@ class UsersData(DataLayerDomain):
                                 for _id in [
                                     assoc
                                     for assoc in data["groups"]
-                                    if assoc not in current_associations
+                                    if assoc not in current_groups
                                 ]
                             ]
                         )
@@ -555,6 +555,21 @@ class UsersData(DataLayerDomain):
                         data["primary_group"],
                         user_id,
                     )
+
+                    current_groups = (
+                        (
+                            await pg_session.execute(
+                                select(user_group_associations.c.group_id).where(
+                                    user_group_associations.c.user_id == user.id
+                                )
+                            )
+                        )
+                        .scalars()
+                        .all()
+                    )
+
+                    if data["primary_group"] not in current_groups:
+                        raise DatabaseError("User not in Primary Group")
 
                     await pg_session.execute(
                         delete(user_group_associations)
