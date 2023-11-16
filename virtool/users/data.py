@@ -501,32 +501,47 @@ class UsersData(DataLayerDomain):
                         await compose_groups_update(self._pg, data["groups"])
                     )
 
+                    # gather current groups
+                    current_associations = (
+                        (
+                            await pg_session.execute(
+                                select(user_group_associations.c.group_id).where(
+                                    user_group_associations.c.user_id == user.id
+                                )
+                            )
+                        )
+                        .scalars()
+                        .all()
+                    )
+
+                    # remove groups that user is not part of anymore
                     await pg_session.execute(
                         delete(user_group_associations)
                         .where(user_group_associations.c.user_id == user.id)
                         .where(
                             user_group_associations.c.group_id.in_(
-                                (
-                                    await pg_session.execute(
-                                        select(
-                                            user_group_associations.c.group_id
-                                        ).where(
-                                            user_group_associations.c.user_id == user.id
-                                        )
-                                    )
-                                )
-                                .scalars()
-                                .all()
+                                [
+                                    assoc
+                                    for assoc in current_associations
+                                    if assoc not in data["groups"]
+                                ]
                             )
                         )
                     )
 
-                    if len(data["groups"]) > 0:
-                        await pg_session.execute(
-                            insert(user_group_associations).values(
-                                [(user.id, _id) for _id in data["groups"]]
-                            )
+                    # add groups that user was not a part of before
+                    await pg_session.execute(
+                        insert(user_group_associations).values(
+                            [
+                                (user.id, _id)
+                                for _id in [
+                                    assoc
+                                    for assoc in data["groups"]
+                                    if assoc not in current_associations
+                                ]
+                            ]
                         )
+                    )
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
