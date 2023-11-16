@@ -229,29 +229,11 @@ class UsersData(DataLayerDomain):
         if handle == "virtool":
             raise ResourceConflictError("Reserved user name: virtool")
 
-        async with both_transactions(self._mongo, self._pg) as (
-            mongo_session,
-            pg_session,
-        ):
-            now = virtool.utils.timestamp()
+        document = await self.create(handle, password)
 
-            document = await create_user(
-                self._mongo, handle, password, False, session=mongo_session
-            )
+        await self.set_administrator_role(document.id, AdministratorRole.FULL)
 
-            pg_session.add(
-                SQLUser(
-                    legacy_id=document["_id"],
-                    handle=handle,
-                    password=document["password"],
-                    force_reset=False,
-                    last_password_change=now,
-                )
-            )
-
-        await self.set_administrator_role(document["_id"], AdministratorRole.FULL)
-
-        return await self.get(document["_id"])
+        return await self.get(document.id)
 
     async def find_or_create_b2c_user(
         self, b2c_user_attributes: B2CUserAttributes
