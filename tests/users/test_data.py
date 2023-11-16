@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import pytest
 from sqlalchemy import select
@@ -14,6 +15,7 @@ from virtool.data.layer import DataLayer
 from virtool.fake.next import DataFaker
 from virtool.mongo.core import Mongo
 from virtool.mongo.utils import get_one_field
+from virtool.pg.utils import get_row_by_id
 from virtool.users.db import B2CUserAttributes
 from virtool.users.mongo import validate_credentials
 from virtool.users.oas import UpdateUserRequest
@@ -42,16 +44,16 @@ class TestCreate:
             matcher=_last_password_change_matcher,
         )
 
-        async with (AsyncSession(pg) as session):
-            row = await session.get(SQLUser, 1)
+        row, doc = await asyncio.gather(
+            get_row_by_id(pg, SQLUser, 1), mongo.users.find_one({"_id": user.id})
+        )
 
-            assert row.to_dict() == snapshot(
-                name="pg",
-                exclude=props("password"),
-                matcher=_last_password_change_matcher,
-            )
+        assert row.to_dict() == snapshot(
+            name="pg",
+            exclude=props("password"),
+            matcher=_last_password_change_matcher,
+        )
 
-        doc = await mongo.users.find_one({"_id": user.id})
         assert doc == snapshot(
             name="mongo",
             exclude=props("password"),
