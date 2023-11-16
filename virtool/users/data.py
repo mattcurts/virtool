@@ -159,17 +159,52 @@ class UsersData(DataLayerDomain):
     async def create(
         self,
         handle: str,
-        password: str | None,
+        password: str,
         force_reset: bool = False,
-        b2c_user_attributes: B2CUserAttributes | None = None,
     ) -> User:
         """
         Create a new user.
 
-        If Azure AD B2C information is given, add it to user document.
-
         :param handle: the requested handle for the user
         :param password: a password
+        :param force_reset: force the user to reset password on next login
+        :return: the user document
+        """
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
+            document = await create_user(
+                self._mongo,
+                handle,
+                password,
+                force_reset,
+                session=mongo_session,
+            )
+
+            pg_session.add(
+                SQLUser(
+                    legacy_id=document["_id"],
+                    handle=handle,
+                    password=document["password"] if password else None,
+                    force_reset=force_reset,
+                    last_password_change=virtool.utils.timestamp(),
+                )
+            )
+
+        return await self.get(document["_id"])
+
+    @emits(Operation.CREATE)
+    async def create_b2c(
+        self,
+        handle: str,
+        b2c_user_attributes: B2CUserAttributes,
+        force_reset: bool = False,
+    ) -> User:
+        """
+        Create a new user using Azure B2C information.
+
+        :param handle: the requested handle for the user
         :param force_reset: force the user to reset password on next login
         :param  b2c_user_attributes: Azure b2c user attributes used to describe a user
         :return: the user document
@@ -178,38 +213,26 @@ class UsersData(DataLayerDomain):
             mongo_session,
             pg_session,
         ):
-            now = virtool.utils.timestamp()
-            display_name = ""
-            given_name = ""
-            family_name = ""
-            oid = ""
-
             document = await create_user(
                 self._mongo,
                 handle,
-                password,
+                None,
                 force_reset,
                 b2c_user_attributes=b2c_user_attributes,
                 session=mongo_session,
             )
 
-            if b2c_user_attributes:
-                display_name = b2c_user_attributes.display_name
-                given_name = b2c_user_attributes.given_name
-                family_name = b2c_user_attributes.family_name
-                oid = b2c_user_attributes.oid
-
             pg_session.add(
                 SQLUser(
                     legacy_id=document["_id"],
                     handle=handle,
-                    password=document["password"] if password else None,
+                    password=None,
                     force_reset=force_reset,
-                    last_password_change=now,
-                    b2c_display_name=display_name,
-                    b2c_given_name=given_name,
-                    b2c_family_name=family_name,
-                    b2c_oid=oid,
+                    last_password_change=virtool.utils.timestamp(),
+                    b2c_display_name=b2c_user_attributes.display_name,
+                    b2c_given_name=b2c_user_attributes.given_name,
+                    b2c_family_name=b2c_user_attributes.family_name,
+                    b2c_oid=b2c_user_attributes.oid,
                 )
             )
 
@@ -259,9 +282,7 @@ class UsersData(DataLayerDomain):
         )
 
         try:
-            user = await self.create(
-                handle, None, False, b2c_user_attributes=b2c_user_attributes
-            )
+            user = await self.create_b2c(handle, b2c_user_attributes)
         except DuplicateKeyError:
             return await self.find_or_create_b2c_user(b2c_user_attributes)
 
