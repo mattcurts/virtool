@@ -1,8 +1,9 @@
 import asyncio
+from typing import Any
 
 from pymongo.errors import DuplicateKeyError
 from sqlalchemy import select, update, delete, insert
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from virtool_core.models.roles import AdministratorRole
 from virtool_core.models.user import User, UserSearchResult
 
@@ -338,7 +339,9 @@ class UsersData(DataLayerDomain):
 
         return user
 
-    async def update_mongo_only(self, user_id: str, data: UpdateUserRequest):
+    async def update_mongo_only(
+        self, user_id: str, data: dict[str, Any], mongo_session
+    ):
         """
         Update a user.
 
@@ -346,104 +349,87 @@ class UsersData(DataLayerDomain):
 
         :param user_id: the ID of the user to update
         :param data: the update data object
+        :param mongo_session: the mongo session being used
         :return: the updated user
         """
-        async with both_transactions(self._mongo, self._pg) as (
-            mongo_session,
-            pg_session,
-        ):
-            document = await self._mongo.users.find_one(
-                {"_id": user_id}, ["administrator", "groups"], session=mongo_session
+        document = await self._mongo.users.find_one(
+            {"_id": user_id}, ["administrator", "groups"], session=mongo_session
+        )
+
+        if document is None:
+            raise ResourceNotFoundError("User does not exist")
+
+        updates = {}
+
+        if "administrator" in data:
+            updates["administrator"] = data["administrator"]
+
+        if "force_reset" in data:
+            updates.update(
+                {
+                    "force_reset": data["force_reset"],
+                    "invalidate_sessions": True,
+                }
             )
 
-            if document is None:
-                raise ResourceNotFoundError("User does not exist")
+        if "password" in data:
+            updates.update(
+                {
+                    "password": virtool.users.utils.hash_password(data["password"]),
+                    "last_password_change": virtool.utils.timestamp(),
+                    "invalidate_sessions": True,
+                }
+            )
 
-            data = data.dict(exclude_unset=True)
+        if "groups" in data:
+            try:
+                updates.update(await compose_groups_update(self._pg, data["groups"]))
 
-            updates = {}
+            except DatabaseError as err:
+                raise ResourceConflictError(str(err))
 
-            if "administrator" in data:
-                updates["administrator"] = data["administrator"]
-
-                role_assignment = AdministratorRoleAssignment(
-                    user_id, AdministratorRole.FULL
+        if "primary_group" in data:
+            try:
+                primary_group = await compose_primary_group_update(
+                    self._mongo,
+                    self._pg,
+                    data.get("groups", []),
+                    data["primary_group"],
+                    user_id,
                 )
 
-                if data["administrator"]:
-                    await self._authorization_client.add(role_assignment)
-                else:
-                    await self._authorization_client.remove(role_assignment)
+            except DatabaseError as err:
+                raise ResourceConflictError(str(err))
+            updates.update(primary_group)
 
-            if "force_reset" in data:
-                updates.update(
-                    {
-                        "force_reset": data["force_reset"],
-                        "invalidate_sessions": True,
-                    }
-                )
+        if "active" in data:
+            updates.update({"active": data["active"], "invalidate_sessions": True})
 
-            if "password" in data:
-                hashedpass = virtool.users.utils.hash_password(data["password"])
-                timestamp = virtool.utils.timestamp()
-                updates.update(
-                    {
-                        "password": hashedpass,
-                        "last_password_change": timestamp,
-                        "invalidate_sessions": True,
-                    }
-                )
+        if updates:
+            document = await self._mongo.users.find_one_and_update(
+                {"_id": user_id}, {"$set": updates}, session=mongo_session
+            )
 
-            if "groups" in data:
-                try:
-                    updates.update(
-                        await compose_groups_update(self._pg, data["groups"])
-                    )
+            groups = []
 
-                except DatabaseError as err:
-                    raise ResourceConflictError(str(err))
-
-            if "primary_group" in data:
-                try:
-                    primary_group = await compose_primary_group_update(
-                        self._mongo,
-                        self._pg,
-                        data.get("groups", []),
-                        data["primary_group"],
-                        user_id,
-                    )
-
-                except DatabaseError as err:
-                    raise ResourceConflictError(str(err))
-                updates.update(primary_group)
-
-            if "active" in data:
-                updates.update({"active": data["active"], "invalidate_sessions": True})
-
-            if updates:
-                document = await self._mongo.users.find_one_and_update(
-                    {"_id": user_id}, {"$set": updates}, session=mongo_session
-                )
-
-                if document["groups"]:
+            if document["groups"]:
+                async with AsyncSession(self._pg) as pg_session:
                     result = await pg_session.execute(
                         select(SQLGroup).where(
                             compose_legacy_id_expression(SQLGroup, document["groups"])
                         )
                     )
 
-                    groups = [group.to_dict() for group in result.scalars().all()]
-                else:
-                    groups = []
+                groups = [group.to_dict() for group in result.scalars().all()]
 
-                await update_keys(
-                    self._mongo,
-                    user_id,
-                    document["administrator"],
-                    document["groups"],
-                    merge_group_permissions(groups),
-                    session=mongo_session,
-                )
+            await update_keys(
+                self._mongo,
+                user_id,
+                document["administrator"],
+                document["groups"],
+                merge_group_permissions(groups),
+                session=mongo_session,
+            )
         return await self.get(user_id)
 
     @emits(Operation.UPDATE)
@@ -461,6 +447,9 @@ class UsersData(DataLayerDomain):
             mongo_session,
             pg_session,
         ):
+            data = data.dict(exclude_unset=True)
+            mongo_user = await self.update_mongo_only(user_id, data, mongo_session)
+
             user = (
                 await pg_session.execute(
                     select(SQLUser).where(SQLUser.legacy_id == user_id).limit(1)
@@ -468,21 +457,9 @@ class UsersData(DataLayerDomain):
             ).scalar()
 
             if user is None:
-                return await self.update_mongo_only(user_id, data)
-
-            document = await self._mongo.users.find_one(
-                {"_id": user_id}, ["administrator", "groups"], session=mongo_session
-            )
-
-            if document is None:
-                raise ResourceNotFoundError("User does not exist")
-
-            data = data.dict(exclude_unset=True)
-
-            updates = {}
+                return mongo_user
 
             if "administrator" in data:
-                updates["administrator"] = data["administrator"]
                 user.administrator = data["administrator"]
 
                 role_assignment = AdministratorRoleAssignment(
@@ -495,32 +472,16 @@ class UsersData(DataLayerDomain):
                     await self._authorization_client.remove(role_assignment)
 
             if "force_reset" in data:
-                updates.update(
-                    {"force_reset": data["force_reset"], "invalidate_sessions": True}
-                )
                 user.force_reset = data["force_reset"]
                 user.invalidate_sessions = True
 
             if "password" in data:
-                hashedpass = virtool.users.utils.hash_password(data["password"])
-                timestamp = virtool.utils.timestamp()
-                updates.update(
-                    {
-                        "password": hashedpass,
-                        "last_password_change": timestamp,
-                        "invalidate_sessions": True,
-                    }
-                )
-                user.password = hashedpass
-                user.last_password_change = timestamp
+                user.password = virtool.users.utils.hash_password(data["password"])
+                user.last_password_change = virtool.utils.timestamp()
                 user.invalidate_sessions = True
 
             if "groups" in data:
                 try:
-                    updates.update(
-                        await compose_groups_update(self._pg, data["groups"])
-                    )
-
                     # gather current groups
                     current_groups = (
                         (
@@ -568,14 +529,6 @@ class UsersData(DataLayerDomain):
 
             if "primary_group" in data:
                 try:
-                    primary_group = await compose_primary_group_update(
-                        self._mongo,
-                        self._pg,
-                        data.get("groups", []),
-                        data["primary_group"],
-                        user_id,
-                    )
-
                     current_groups = (
                         (
                             await pg_session.execute(
@@ -606,37 +559,11 @@ class UsersData(DataLayerDomain):
                     )
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
-                updates.update(primary_group)
 
             if "active" in data:
-                updates.update({"active": data["active"], "invalidate_sessions": True})
                 user.active = data["active"]
                 user.invalidate_sessions = True
 
-            if updates:
-                document = await self._mongo.users.find_one_and_update(
-                    {"_id": user_id}, {"$set": updates}, session=mongo_session
-                )
-
-                if document["groups"]:
-                    result = await pg_session.execute(
-                        select(SQLGroup).where(
-                            compose_legacy_id_expression(SQLGroup, document["groups"])
-                        )
-                    )
-
-                    groups = [group.to_dict() for group in result.scalars().all()]
-                else:
-                    groups = []
-
-                await update_keys(
-                    self._mongo,
-                    user_id,
-                    document["administrator"],
-                    document["groups"],
-                    merge_group_permissions(groups),
-                    session=mongo_session,
-                )
         return await self.get(user_id)
 
     async def check_users_exist(self) -> bool:
