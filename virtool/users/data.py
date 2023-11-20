@@ -4,6 +4,7 @@ from typing import Any
 from pymongo.errors import DuplicateKeyError
 from sqlalchemy import select, update, delete, insert
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import selectinload
 from virtool_core.models.roles import AdministratorRole
 from virtool_core.models.user import User, UserSearchResult
 
@@ -452,7 +453,10 @@ class UsersData(DataLayerDomain):
 
             user = (
                 await pg_session.execute(
-                    select(SQLUser).where(SQLUser.legacy_id == user_id).limit(1)
+                    select(SQLUser)
+                    .where(SQLUser.legacy_id == user_id)
+                    .limit(1)
+                    .options(selectinload(SQLUser.groups))
                 )
             ).scalar()
 
@@ -482,46 +486,14 @@ class UsersData(DataLayerDomain):
 
             if "groups" in data:
                 try:
-                    # gather current groups
-                    current_groups = (
+                    user.groups = (
                         (
                             await pg_session.execute(
-                                select(user_group_associations.c.group_id).where(
-                                    user_group_associations.c.user_id == user.id
-                                )
+                                select(SQLGroup).where(SQLGroup.id.in_(data["groups"]))
                             )
                         )
                         .scalars()
                         .all()
-                    )
-
-                    # remove groups that user is not part of anymore
-                    await pg_session.execute(
-                        delete(user_group_associations)
-                        .where(user_group_associations.c.user_id == user.id)
-                        .where(
-                            user_group_associations.c.group_id.in_(
-                                [
-                                    assoc
-                                    for assoc in current_groups
-                                    if assoc not in data["groups"]
-                                ]
-                            )
-                        )
-                    )
-
-                    # add groups that user was not a part of before
-                    await pg_session.execute(
-                        insert(user_group_associations).values(
-                            [
-                                (user.id, _id)
-                                for _id in [
-                                    assoc
-                                    for assoc in data["groups"]
-                                    if assoc not in current_groups
-                                ]
-                            ]
-                        )
                     )
 
                 except DatabaseError as err:
@@ -529,34 +501,16 @@ class UsersData(DataLayerDomain):
 
             if "primary_group" in data:
                 try:
-                    current_groups = (
-                        (
-                            await pg_session.execute(
-                                select(user_group_associations.c.group_id).where(
-                                    user_group_associations.c.user_id == user.id
-                                )
-                            )
+                    print(data["primary_group"])
+                    user.primary_group_id = data["primary_group"]
+                    user.primary_group = (
+                        await pg_session.execute(
+                            select(SQLGroup).where(SQLGroup.id == data["primary_group"])
                         )
-                        .scalars()
-                        .all()
-                    )
-
-                    if data["primary_group"] not in current_groups:
+                    ).scalar()
+                    if user.primary_group not in user.groups:
                         raise DatabaseError("User not in Primary Group")
 
-                    await pg_session.execute(
-                        delete(user_group_associations)
-                        .where(user_group_associations.c.user_id == user.id)
-                        .where(
-                            user_group_associations.c.group_id == user.primary_group_id
-                        )
-                    )
-
-                    await pg_session.execute(
-                        insert(user_group_associations).values(
-                            user_id=user.id, group_id=data["primary_group"]
-                        )
-                    )
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
 
