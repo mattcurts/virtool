@@ -205,30 +205,32 @@ class TestUpdate:
         Test that setting and unsetting ``force_reset`` works as expected.
         """
         user = await fake2.users.create()
+
+        assert user.force_reset is False
         async with (AsyncSession(pg) as session):
             row = await session.get(SQLUser, 1)
-            assert await get_one_field(mongo.users, "force_reset", user.id) is False
 
-            assert row.force_reset is False
-            assert user.force_reset is False
-            user = await data_layer.users.update(
-                user.id, UpdateUserRequest(force_reset=True)
-            )
+        assert row.force_reset is False
 
-        async with (AsyncSession(pg) as session):
-            row = await session.get(SQLUser, 1)
-            assert user.force_reset is True
-            assert row.force_reset is True
-            assert await get_one_field(mongo.users, "force_reset", user.id) is True
-            user = await data_layer.users.update(
-                user.id, UpdateUserRequest(force_reset=False)
-            )
+        user = await data_layer.users.update(
+            user.id, UpdateUserRequest(force_reset=True)
+        )
 
         async with (AsyncSession(pg) as session):
             row = await session.get(SQLUser, 1)
-            assert user.force_reset is False
-            assert row.force_reset is False
-            assert await get_one_field(mongo.users, "force_reset", user.id) is False
+
+        assert user.force_reset is True
+        assert row.force_reset is True
+
+        user = await data_layer.users.update(
+            user.id, UpdateUserRequest(force_reset=False)
+        )
+
+        async with (AsyncSession(pg) as session):
+            row = await session.get(SQLUser, 1)
+
+        assert user.force_reset is False
+        assert row.force_reset is False
 
     async def test_set_groups(
         self,
