@@ -236,7 +236,6 @@ class TestUpdate:
         self,
         data_layer: DataLayer,
         fake2: DataFaker,
-        mongo: Mongo,
         pg: AsyncEngine,
         snapshot: SnapshotAssertion,
     ):
@@ -247,89 +246,65 @@ class TestUpdate:
         group_2 = await fake2.groups.create()
 
         user = await fake2.users.create()
-        document = await mongo.users.find_one({"_id": user.id})
 
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
-                select(user_group_associations)
-                .join(SQLUser)
-                .where(user_group_associations.c.user_id == SQLUser.id)
+                select(user_group_associations).where(
+                    user_group_associations.c.user_id == SQLUser.id
+                )
             )
-        assert groups.mappings().all() == snapshot(name="groups_1")
-        assert user == snapshot(name="obj_1", matcher=_last_password_change_matcher)
-        assert document == snapshot(
-            name="mongo_1",
-            exclude=props("password"),
-            matcher=_last_password_change_matcher,
+            row = await session.get(SQLUser, 1)
+        assert groups.mappings().all() == snapshot(name="groups_mapping_1")
+        assert user.groups == snapshot(name="groups_1")
+        assert user == snapshot(name="mongo_1", matcher=_last_password_change_matcher)
+        assert row == snapshot(
+            name="pg_1", matcher=path_type({"last_password_change": (datetime,)})
         )
-        async with (AsyncSession(pg) as session):
-            groups = await session.execute(
-                select(user_group_associations)
-                .where(user_group_associations.c.user_id == SQLUser.id)
-                .join(SQLUser)
-            )
-        assert groups.mappings().all() == []
-        assert user.groups == []
-
         user = await data_layer.users.update(
             user.id, UpdateUserRequest(groups=[group_2.id])
         )
-        document = await mongo.users.find_one({"_id": user.id})
 
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
-                select(user_group_associations)
-                .join(SQLUser)
-                .where(user_group_associations.c.user_id == SQLUser.id)
+                select(user_group_associations).where(
+                    user_group_associations.c.user_id == SQLUser.id
+                )
             )
-        assert groups.mappings().all() == snapshot(name="groups_2")
-        assert user == snapshot(name="obj_2", matcher=_last_password_change_matcher)
-        assert document == snapshot(
-            name="mongo_2",
-            exclude=props("password"),
-            matcher=_last_password_change_matcher,
-        )
-        assert document["groups"] == [group_2.id]
+            row = await session.get(SQLUser, 1)
+        assert groups.mappings().all() == snapshot(name="groups_mapping_2")
+        assert user.groups == snapshot(name="groups_2")
+        assert user == snapshot(name="mongo_2", matcher=_last_password_change_matcher)
+        assert row == snapshot(name="pg_2", matcher=_last_password_change_matcher)
 
         user = await data_layer.users.update(
             user.id, UpdateUserRequest(groups=[group_2.id, group_1.id])
         )
-        document = await mongo.users.find_one({"_id": user.id})
 
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
-                select(user_group_associations)
-                .join(SQLUser)
-                .where(user_group_associations.c.user_id == SQLUser.id)
+                select(user_group_associations).where(
+                    user_group_associations.c.user_id == SQLUser.id
+                )
             )
-        assert groups.mappings().all() == snapshot(name="groups_3")
-        assert user == snapshot(name="obj_3", matcher=_last_password_change_matcher)
-        assert document == snapshot(
-            name="mongo_3",
-            exclude=props("password"),
-            matcher=_last_password_change_matcher,
-        )
-        assert document["groups"] == [
-            group_2.id,
-            group_1.id,
-        ]
+            row = await session.get(SQLUser, 1)
+        assert groups.mappings().all() == snapshot(name="groups_mapping_3")
+        assert user.groups == snapshot(name="groups_3")
+        assert user == snapshot(name="mongo_3", matcher=_last_password_change_matcher)
+        assert row == snapshot(name="pg_3", matcher=_last_password_change_matcher)
 
         user = await data_layer.users.update(user.id, UpdateUserRequest(groups=[]))
-        document = await mongo.users.find_one({"_id": user.id})
+
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
-                select(user_group_associations)
-                .join(SQLUser)
-                .where(user_group_associations.c.user_id == SQLUser.id)
+                select(user_group_associations).where(
+                    user_group_associations.c.user_id == SQLUser.id
+                )
             )
-        assert groups.mappings().all() == snapshot(name="groups_4")
-        assert user == snapshot(name="obj_4", matcher=_last_password_change_matcher)
-        assert document == snapshot(
-            name="mongo_4",
-            exclude=props("password"),
-            matcher=_last_password_change_matcher,
-        )
-        assert document["groups"] == []
+            row = await session.get(SQLUser, 1)
+        assert groups.mappings().all() == snapshot(name="groups_mapping_4")
+        assert user.groups == snapshot(name="groups_4")
+        assert user == snapshot(name="mongo_4", matcher=_last_password_change_matcher)
+        assert row == snapshot(name="pg_4", matcher=_last_password_change_matcher)
 
     async def test_password(
         self,
