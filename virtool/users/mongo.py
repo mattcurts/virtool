@@ -117,25 +117,6 @@ async def create_user(
         raise ResourceConflictError("User already exists")
 
 
-async def generate_handle(collection, given_name: str, family_name: str) -> str:
-    """
-    Create handle for new B2C users in Virtool using values from ID token and random
-    integer.
-
-    :param collection: the mongo collection to check for existing usernames
-    :param given_name: user's first name collected from Azure AD B2C
-    :param family_name: user's last name collected from Azure AD B2C
-
-    :return: user handle created from B2C user info
-    """
-    handle = f"{given_name}-{family_name}-{random.randint(1, 100)}"
-
-    if await collection.count_documents({"handle": handle}):
-        return await generate_handle(collection, given_name, family_name)
-
-    return handle
-
-
 async def update_keys(
     mongo: "Mongo",
     user_id: str,

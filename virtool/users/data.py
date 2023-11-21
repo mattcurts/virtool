@@ -1,6 +1,8 @@
 import asyncio
+import random
 from typing import Any
 
+from pymongo import collection
 from pymongo.errors import DuplicateKeyError
 from sqlalchemy import select, update, delete, insert
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -32,10 +34,9 @@ from virtool.users.mongo import (
     create_user,
     update_keys,
     compose_primary_group_update,
-    generate_handle,
 )
 from virtool.users.oas import UpdateUserRequest
-from virtool.users.pg import SQLUser, user_group_associations
+from virtool.users.pg import SQLUser
 from virtool.users.transforms import AttachPermissionsTransform
 from virtool.utils import base_processor
 
@@ -276,11 +277,10 @@ class UsersData(DataLayerDomain):
         ):
             return await self.get(document["_id"])
 
-        handle = await generate_handle(
-            self._mongo.users,
-            b2c_user_attributes.given_name,
-            b2c_user_attributes.family_name,
-        )
+        handle = f"{b2c_user_attributes.given_name}-{b2c_user_attributes.family_name}-{random.randint(1, 100)}"
+
+        while await self._mongo.users.count_documents({"handle": handle}):
+            handle = f"{b2c_user_attributes.given_name}-{b2c_user_attributes.family_name}-{random.randint(1, 100)}"
 
         try:
             user = await self.create_b2c(handle, b2c_user_attributes)
