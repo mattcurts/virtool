@@ -257,9 +257,8 @@ class TestUpdate:
         assert groups.mappings().all() == snapshot(name="groups_mapping_1")
         assert user.groups == snapshot(name="groups_1")
         assert user == snapshot(name="mongo_1", matcher=_last_password_change_matcher)
-        assert row == snapshot(
-            name="pg_1", matcher=path_type({"last_password_change": (datetime,)})
-        )
+        assert row == snapshot(name="pg_1")
+
         user = await data_layer.users.update(
             user.id, UpdateUserRequest(groups=[group_2.id])
         )
@@ -274,7 +273,7 @@ class TestUpdate:
         assert groups.mappings().all() == snapshot(name="groups_mapping_2")
         assert user.groups == snapshot(name="groups_2")
         assert user == snapshot(name="mongo_2", matcher=_last_password_change_matcher)
-        assert row == snapshot(name="pg_2", matcher=_last_password_change_matcher)
+        assert row == snapshot(name="pg_2")
 
         user = await data_layer.users.update(
             user.id, UpdateUserRequest(groups=[group_2.id, group_1.id])
@@ -290,7 +289,7 @@ class TestUpdate:
         assert groups.mappings().all() == snapshot(name="groups_mapping_3")
         assert user.groups == snapshot(name="groups_3")
         assert user == snapshot(name="mongo_3", matcher=_last_password_change_matcher)
-        assert row == snapshot(name="pg_3", matcher=_last_password_change_matcher)
+        assert row == snapshot(name="pg_3")
 
         user = await data_layer.users.update(user.id, UpdateUserRequest(groups=[]))
 
@@ -304,7 +303,7 @@ class TestUpdate:
         assert groups.mappings().all() == snapshot(name="groups_mapping_4")
         assert user.groups == snapshot(name="groups_4")
         assert user == snapshot(name="mongo_4", matcher=_last_password_change_matcher)
-        assert row == snapshot(name="pg_4", matcher=_last_password_change_matcher)
+        assert row == snapshot(name="pg_4")
 
     async def test_password(
         self,
