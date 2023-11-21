@@ -37,3 +37,12 @@ class SQLUser(Base):
 
     primary_group_id: Mapped[int | None] = mapped_column(ForeignKey("groups.id"))
     primary_group: Mapped[SQLGroup | None] = relationship()
+
+    def __repr__(self):
+        params = ", ".join(
+            f"{column}='{type(value).__name__ if column == 'last_password_change' else value}'"
+            for column, value in self.to_dict().items()
+            if column not in ["password"]
+        )
+
+        return f"<{self.__class__.__name__}({params})>"
