@@ -329,7 +329,6 @@ async def test_create_first_user(
     status: int,
     mongo: Mongo,
     pg: AsyncEngine,
-    data_layer: DataLayer,
     snapshot: SnapshotAssertion,
     spawn_client: ClientSpawner,
     static_time,

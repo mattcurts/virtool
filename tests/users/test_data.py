@@ -83,16 +83,16 @@ class TestCreate:
             matcher=_last_password_change_matcher,
         )
 
-        async with (AsyncSession(pg) as session):
-            row = await session.get(SQLUser, 1)
+        row, doc = await asyncio.gather(
+            get_row_by_id(pg, SQLUser, 1), mongo.users.find_one({"_id": user.id})
+        )
 
-            assert row.to_dict() == snapshot(
-                name="pg",
-                exclude=props("password"),
-                matcher=_last_password_change_matcher,
-            )
+        assert row.to_dict() == snapshot(
+            name="pg",
+            exclude=props("password"),
+            matcher=_last_password_change_matcher,
+        )
 
-        doc = await mongo.users.find_one({"_id": user.id})
         assert doc == snapshot(
             name="mongo",
             exclude=props("password"),
