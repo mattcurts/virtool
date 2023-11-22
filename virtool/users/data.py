@@ -29,6 +29,7 @@ from virtool.mongo.utils import id_exists
 from virtool.users.db import (
     B2CUserAttributes,
     compose_groups_update,
+    update_mongo_user,
 )
 from virtool.users.mongo import (
     create_user,
@@ -188,7 +189,7 @@ class UsersData(DataLayerDomain):
                 SQLUser(
                     legacy_id=document["_id"],
                     handle=handle,
-                    password=document["password"] if password else None,
+                    password=document["password"],
                     force_reset=force_reset,
                     last_password_change=virtool.utils.timestamp(),
                 )
@@ -340,7 +341,7 @@ class UsersData(DataLayerDomain):
 
         return user
 
-    async def update_mongo_only(
+    async def update_mongo_user(
         self, user_id: str, data: dict[str, Any], mongo_session
     ):
         """
@@ -449,7 +450,10 @@ class UsersData(DataLayerDomain):
             pg_session,
         ):
             data = data.dict(exclude_unset=True)
-            mongo_user = await self.update_mongo_only(user_id, data, mongo_session)
+            mongo_user = await self.update_mongo_user(user_id, data, mongo_session)
+            mongo_user = await update_mongo_user(
+                user_id, self._mongo, self._pg, data, mongo_session, self
+            )
 
             user = (
                 await pg_session.execute(
@@ -501,7 +505,6 @@ class UsersData(DataLayerDomain):
 
             if "primary_group" in data:
                 try:
-                    print(data["primary_group"])
                     user.primary_group_id = data["primary_group"]
                     user.primary_group = (
                         await pg_session.execute(
