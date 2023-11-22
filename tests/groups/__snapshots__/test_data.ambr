@@ -1,18 +1,92 @@
 # serializer version: 1
 # name: TestCreate.test_ok[group]
-  Group(id=1, legacy_id=None, name='Test', permissions=Permissions(cancel_job=False, create_ref=False, create_sample=False, modify_hmm=False, modify_subtraction=False, remove_file=False, remove_job=False, upload_file=False), users=[])
+  dict({
+    'id': 1,
+    'legacy_id': None,
+    'name': 'Test',
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': False,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'users': list([
+    ]),
+  })
 # ---
 # name: TestCreate.test_ok[pg]
   <SQLGroup(id=1, legacy_id=None, name=Test, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>
 # ---
 # name: TestGet.test_ok
-  Group(id=1, legacy_id=None, name='musicians', permissions=Permissions(cancel_job=False, create_ref=False, create_sample=False, modify_hmm=False, modify_subtraction=False, remove_file=False, remove_job=False, upload_file=False), users=[UserNested(id='bf1b993c', administrator=False, handle='laura56'), UserNested(id='fb085f7f', administrator=False, handle='sjohnson')])
+  dict({
+    'id': 1,
+    'legacy_id': None,
+    'name': 'musicians',
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': False,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'users': list([
+      dict({
+        'administrator': False,
+        'handle': 'laura56',
+        'id': 'bf1b993c',
+      }),
+      dict({
+        'administrator': False,
+        'handle': 'sjohnson',
+        'id': 'fb085f7f',
+      }),
+    ]),
+  })
 # ---
 # name: test_update_name[group_after]
-  Group(id=1, legacy_id=None, name='Renamed', permissions=Permissions(cancel_job=False, create_ref=False, create_sample=False, modify_hmm=False, modify_subtraction=False, remove_file=False, remove_job=False, upload_file=False), users=[])
+  dict({
+    'id': 1,
+    'legacy_id': None,
+    'name': 'Renamed',
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': False,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'users': list([
+    ]),
+  })
 # ---
 # name: test_update_name[group_before]
-  Group(id=1, legacy_id=None, name='Test', permissions=Permissions(cancel_job=False, create_ref=False, create_sample=False, modify_hmm=False, modify_subtraction=False, remove_file=False, remove_job=False, upload_file=False), users=[])
+  dict({
+    'id': 1,
+    'legacy_id': None,
+    'name': 'Test',
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': False,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'users': list([
+    ]),
+  })
 # ---
 # name: test_update_name[pg_after]
   <SQLGroup(id=1, legacy_id=None, name=Renamed, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>
@@ -21,13 +95,61 @@
   <SQLGroup(id=1, legacy_id=None, name=Test, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>
 # ---
 # name: test_update_permissions[group_added]
-  Group(id=1, legacy_id=None, name='Test', permissions=Permissions(cancel_job=False, create_ref=False, create_sample=True, modify_hmm=False, modify_subtraction=True, remove_file=False, remove_job=False, upload_file=False), users=[])
+  dict({
+    'id': 1,
+    'legacy_id': None,
+    'name': 'Test',
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': True,
+      'modify_hmm': False,
+      'modify_subtraction': True,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'users': list([
+    ]),
+  })
 # ---
 # name: test_update_permissions[group_before]
-  Group(id=1, legacy_id=None, name='Test', permissions=Permissions(cancel_job=False, create_ref=False, create_sample=False, modify_hmm=False, modify_subtraction=False, remove_file=False, remove_job=False, upload_file=False), users=[])
+  dict({
+    'id': 1,
+    'legacy_id': None,
+    'name': 'Test',
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': False,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'users': list([
+    ]),
+  })
 # ---
 # name: test_update_permissions[group_removed]
-  Group(id=1, legacy_id=None, name='Test', permissions=Permissions(cancel_job=False, create_ref=False, create_sample=False, modify_hmm=False, modify_subtraction=True, remove_file=False, remove_job=False, upload_file=False), users=[])
+  dict({
+    'id': 1,
+    'legacy_id': None,
+    'name': 'Test',
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': True,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'users': list([
+    ]),
+  })
 # ---
 # name: test_update_permissions[pg_added]
   <SQLGroup(id=1, legacy_id=None, name=Test, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': True, 'modify_subtraction': True})>
