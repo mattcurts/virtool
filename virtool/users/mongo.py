@@ -6,7 +6,6 @@ TODO: Drop legacy group id support when we fully migrate to integer ids.
 from __future__ import annotations
 
 import asyncio
-import random
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
 from pymongo.errors import DuplicateKeyError

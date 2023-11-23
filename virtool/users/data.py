@@ -2,9 +2,9 @@ import asyncio
 import random
 from typing import Any
 
-from pymongo import collection
+
 from pymongo.errors import DuplicateKeyError
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import selectinload
 from virtool_core.models.roles import AdministratorRole
