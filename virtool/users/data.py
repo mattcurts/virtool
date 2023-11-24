@@ -341,99 +341,6 @@ class UsersData(DataLayerDomain):
 
         return user
 
-    async def update_mongo_user(
-        self, user_id: str, data: dict[str, Any], mongo_session
-    ):
-        """
-        Update a user.
-
-        Sessions and API keys are updated as well.
-
-        :param user_id: the ID of the user to update
-        :param data: the update data object
-        :param mongo_session: the mongo session being used
-        :return: the updated user
-        """
-        document = await self._mongo.users.find_one(
-            {"_id": user_id}, ["administrator", "groups"], session=mongo_session
-        )
-
-        if document is None:
-            raise ResourceNotFoundError("User does not exist")
-
-        updates = {}
-
-        if "administrator" in data:
-            updates["administrator"] = data["administrator"]
-
-        if "force_reset" in data:
-            updates.update(
-                {
-                    "force_reset": data["force_reset"],
-                    "invalidate_sessions": True,
-                }
-            )
-
-        if "password" in data:
-            updates.update(
-                {
-                    "password": virtool.users.utils.hash_password(data["password"]),
-                    "last_password_change": virtool.utils.timestamp(),
-                    "invalidate_sessions": True,
-                }
-            )
-
-        if "groups" in data:
-            try:
-                updates.update(await compose_groups_update(self._pg, data["groups"]))
-
-            except DatabaseError as err:
-                raise ResourceConflictError(str(err))
-
-        if "primary_group" in data:
-            try:
-                primary_group = await compose_primary_group_update(
-                    self._mongo,
-                    self._pg,
-                    data.get("groups", []),
-                    data["primary_group"],
-                    user_id,
-                )
-
-            except DatabaseError as err:
-                raise ResourceConflictError(str(err))
-            updates.update(primary_group)
-
-        if "active" in data:
-            updates.update({"active": data["active"], "invalidate_sessions": True})
-
-        if updates:
-            document = await self._mongo.users.find_one_and_update(
-                {"_id": user_id}, {"$set": updates}, session=mongo_session
-            )
-
-            groups = []
-
-            if document["groups"]:
-                async with AsyncSession(self._pg) as pg_session:
-                    result = await pg_session.execute(
-                        select(SQLGroup).where(
-                            compose_legacy_id_expression(SQLGroup, document["groups"])
-                        )
-                    )
-
-                groups = [group.to_dict() for group in result.scalars().all()]
-
-            await update_keys(
-                self._mongo,
-                user_id,
-                document["administrator"],
-                document["groups"],
-                merge_group_permissions(groups),
-                session=mongo_session,
-            )
-        return await self.get(user_id)
-
     @emits(Operation.UPDATE)
     async def update(self, user_id: str, data: UpdateUserRequest):
         """
@@ -450,7 +357,6 @@ class UsersData(DataLayerDomain):
             pg_session,
         ):
             data = data.dict(exclude_unset=True)
-            mongo_user = await self.update_mongo_user(user_id, data, mongo_session)
             mongo_user = await update_mongo_user(
                 user_id, self._mongo, self._pg, data, mongo_session, self
             )
