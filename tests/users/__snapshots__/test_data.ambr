@@ -463,6 +463,7 @@
 # ---
 # name: TestUpdate.test_set_groups[0][groups_before]
   list([
+    GroupMinimal(id=1, legacy_id=None, name='gaffers'),
   ])
 # ---
 # name: TestUpdate.test_set_groups[0][groups_mapping_after]
@@ -471,6 +472,7 @@
 # ---
 # name: TestUpdate.test_set_groups[0][groups_mapping_before]
   list([
+    {'user_id': 1, 'group_id': 1},
   ])
 # ---
 # name: TestUpdate.test_set_groups[0][mongo_after]
@@ -514,6 +516,11 @@
     'b2c_oid': None,
     'force_reset': False,
     'groups': list([
+      dict({
+        'id': 1,
+        'legacy_id': None,
+        'name': 'gaffers',
+      }),
     ]),
     'handle': 'leeashley',
     'id': 'bf1b993c',
@@ -543,6 +550,7 @@
 # ---
 # name: TestUpdate.test_set_groups[1][groups_before]
   list([
+    GroupMinimal(id=1, legacy_id=None, name='gaffers'),
   ])
 # ---
 # name: TestUpdate.test_set_groups[1][groups_mapping_after]
@@ -551,6 +559,7 @@
 # ---
 # name: TestUpdate.test_set_groups[1][groups_mapping_before]
   list([
+    {'user_id': 1, 'group_id': 1},
   ])
 # ---
 # name: TestUpdate.test_set_groups[1][mongo_after]
@@ -594,6 +603,11 @@
     'b2c_oid': None,
     'force_reset': False,
     'groups': list([
+      dict({
+        'id': 1,
+        'legacy_id': None,
+        'name': 'gaffers',
+      }),
     ]),
     'handle': 'leeashley',
     'id': 'bf1b993c',
@@ -623,6 +637,7 @@
 # ---
 # name: TestUpdate.test_set_groups[2][groups_before]
   list([
+    GroupMinimal(id=1, legacy_id=None, name='gaffers'),
   ])
 # ---
 # name: TestUpdate.test_set_groups[2][groups_mapping_after]
@@ -631,6 +646,7 @@
 # ---
 # name: TestUpdate.test_set_groups[2][groups_mapping_before]
   list([
+    {'user_id': 1, 'group_id': 1},
   ])
 # ---
 # name: TestUpdate.test_set_groups[2][mongo_after]
@@ -674,6 +690,11 @@
     'b2c_oid': None,
     'force_reset': False,
     'groups': list([
+      dict({
+        'id': 1,
+        'legacy_id': None,
+        'name': 'gaffers',
+      }),
     ]),
     'handle': 'leeashley',
     'id': 'bf1b993c',

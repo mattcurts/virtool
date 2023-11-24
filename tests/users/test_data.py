@@ -254,6 +254,10 @@ class TestUpdate:
         """
         user = await fake2.users.create()
 
+        user = await data_layer.users.update(
+            user.id, UpdateUserRequest(groups=[(await fake2.groups.create()).id])
+        )
+
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
                 select(user_group_associations).where(
