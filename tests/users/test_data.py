@@ -27,11 +27,14 @@ _last_password_change_matcher = path_type(
 
 
 @pytest.fixture(params=[0, 1, 2])
-async def groups(
-    fake2,
-):
+def groups_param(request):
+    return request.param
+
+
+@pytest.fixture
+async def groups(groups_param, fake2):
     groups = []
-    for _ in range(request.param):
+    for _ in range(groups_param):
         groups.append(await fake2.groups.create())
     return groups
 
