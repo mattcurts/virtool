@@ -9,6 +9,7 @@ from virtool.fake.next import DataFaker
 from virtool.groups.oas import UpdateGroupRequest
 from virtool.groups.pg import SQLGroup
 from virtool.pg.utils import get_row_by_id
+from virtool.users.oas import UpdateUserRequest
 from virtool.users.pg import user_group_associations
 from virtool.users.utils import generate_base_permissions
 
@@ -110,13 +111,25 @@ async def test_update_permissions(
 
 
 class TestDelete:
-    async def test_ok(
-        self,
-        data_layer: DataLayer,
-        pg: AsyncEngine,
-    ):
+    async def test_ok(self, data_layer: DataLayer, pg: AsyncEngine, fake2):
         """Test that deletion of a group removes it from both databases."""
+        user = await fake2.users.create()
         group = await data_layer.groups.create("Test")
+        await data_layer.users.update(user.id, UpdateUserRequest(groups=[group.id]))
+
+        async with (AsyncSession(pg) as session):
+            users = (
+                (
+                    await session.execute(
+                        select(user_group_associations).where(
+                            user_group_associations.c.group_id == group.id
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+        assert len(users) == 1
 
         await data_layer.groups.delete(group.id)
 
