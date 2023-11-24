@@ -26,6 +26,16 @@ _last_password_change_matcher = path_type(
 )
 
 
+@pytest.fixture(params=[0, 1, 2])
+async def groups(
+    fake2,
+):
+    groups = []
+    for _ in range(request.param):
+        groups.append(await fake2.groups.create())
+    return groups
+
+
 class TestCreate:
     async def test_no_force_reset(
         self,
@@ -232,19 +242,18 @@ class TestUpdate:
         assert user.force_reset is False
         assert row.force_reset is False
 
+    @pytest.mark.parametrize("groups", [0, 1, 2])
     async def test_set_groups(
         self,
         data_layer: DataLayer,
         fake2: DataFaker,
         pg: AsyncEngine,
         snapshot: SnapshotAssertion,
+        groups,
     ):
         """
         Test that setting ``groups`` works as expected.
         """
-        group_1 = await fake2.groups.create()
-        group_2 = await fake2.groups.create()
-
         user = await fake2.users.create()
 
         async with (AsyncSession(pg) as session):
@@ -254,13 +263,15 @@ class TestUpdate:
                 )
             )
             row = await session.get(SQLUser, 1)
-        assert groups.mappings().all() == snapshot(name="groups_mapping_1")
-        assert user.groups == snapshot(name="groups_1")
-        assert user == snapshot(name="mongo_1", matcher=_last_password_change_matcher)
-        assert row == snapshot(name="pg_1")
+        assert groups.mappings().all() == snapshot(name="groups_mapping_before")
+        assert user.groups == snapshot(name="groups_before")
+        assert user == snapshot(
+            name="mongo_before", matcher=_last_password_change_matcher
+        )
+        assert row == snapshot(name="pg_before")
 
         user = await data_layer.users.update(
-            user.id, UpdateUserRequest(groups=[group_2.id])
+            user.id, UpdateUserRequest(groups=[group.id for group in groups])
         )
 
         async with (AsyncSession(pg) as session):
@@ -270,40 +281,12 @@ class TestUpdate:
                 )
             )
             row = await session.get(SQLUser, 1)
-        assert groups.mappings().all() == snapshot(name="groups_mapping_2")
-        assert user.groups == snapshot(name="groups_2")
-        assert user == snapshot(name="mongo_2", matcher=_last_password_change_matcher)
-        assert row == snapshot(name="pg_2")
-
-        user = await data_layer.users.update(
-            user.id, UpdateUserRequest(groups=[group_2.id, group_1.id])
+        assert groups.mappings().all() == snapshot(name="groups_mapping_after")
+        assert user.groups == snapshot(name="groups_after")
+        assert user == snapshot(
+            name="mongo_after", matcher=_last_password_change_matcher
         )
-
-        async with (AsyncSession(pg) as session):
-            groups = await session.execute(
-                select(user_group_associations).where(
-                    user_group_associations.c.user_id == SQLUser.id
-                )
-            )
-            row = await session.get(SQLUser, 1)
-        assert groups.mappings().all() == snapshot(name="groups_mapping_3")
-        assert user.groups == snapshot(name="groups_3")
-        assert user == snapshot(name="mongo_3", matcher=_last_password_change_matcher)
-        assert row == snapshot(name="pg_3")
-
-        user = await data_layer.users.update(user.id, UpdateUserRequest(groups=[]))
-
-        async with (AsyncSession(pg) as session):
-            groups = await session.execute(
-                select(user_group_associations).where(
-                    user_group_associations.c.user_id == SQLUser.id
-                )
-            )
-            row = await session.get(SQLUser, 1)
-        assert groups.mappings().all() == snapshot(name="groups_mapping_4")
-        assert user.groups == snapshot(name="groups_4")
-        assert user == snapshot(name="mongo_4", matcher=_last_password_change_matcher)
-        assert row == snapshot(name="pg_4")
+        assert row == snapshot(name="pg_after")
 
     async def test_password(
         self,
