@@ -718,6 +718,93 @@
 # name: TestUpdate.test_set_groups[2][pg_before]
   <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
 # ---
+# name: TestUpdate.test_set_groups[3][groups_after]
+  list([
+  ])
+# ---
+# name: TestUpdate.test_set_groups[3][groups_before]
+  list([
+    GroupMinimal(id=1, legacy_id=None, name='gaffers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[3][groups_mapping_after]
+  list([
+  ])
+# ---
+# name: TestUpdate.test_set_groups[3][groups_mapping_before]
+  list([
+    {'user_id': 1, 'group_id': 1},
+  ])
+# ---
+# name: TestUpdate.test_set_groups[3][mongo_after]
+  dict({
+    'active': True,
+    'administrator': False,
+    'administrator_role': None,
+    'b2c': None,
+    'b2c_display_name': None,
+    'b2c_family_name': None,
+    'b2c_given_name': None,
+    'b2c_oid': None,
+    'force_reset': False,
+    'groups': list([
+    ]),
+    'handle': 'leeashley',
+    'id': 'bf1b993c',
+    'last_password_change': datetime,
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': False,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'primary_group': None,
+  })
+# ---
+# name: TestUpdate.test_set_groups[3][mongo_before]
+  dict({
+    'active': True,
+    'administrator': False,
+    'administrator_role': None,
+    'b2c': None,
+    'b2c_display_name': None,
+    'b2c_family_name': None,
+    'b2c_given_name': None,
+    'b2c_oid': None,
+    'force_reset': False,
+    'groups': list([
+      dict({
+        'id': 1,
+        'legacy_id': None,
+        'name': 'gaffers',
+      }),
+    ]),
+    'handle': 'leeashley',
+    'id': 'bf1b993c',
+    'last_password_change': datetime,
+    'permissions': dict({
+      'cancel_job': False,
+      'create_ref': False,
+      'create_sample': False,
+      'modify_hmm': False,
+      'modify_subtraction': False,
+      'remove_file': False,
+      'remove_job': False,
+      'upload_file': False,
+    }),
+    'primary_group': None,
+  })
+# ---
+# name: TestUpdate.test_set_groups[3][pg_after]
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+# ---
+# name: TestUpdate.test_set_groups[3][pg_before]
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+# ---
 # name: TestUpdate.test_set_groups[groups_1]
   list([
   ])

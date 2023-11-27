@@ -26,14 +26,6 @@ _last_password_change_matcher = path_type(
 )
 
 
-@pytest.fixture(params=[0, 1, 2])
-async def groups(fake2, request):
-    groups = []
-    for _ in range(request.param):
-        groups.append(await fake2.groups.create())
-    return groups
-
-
 class TestCreate:
     async def test_no_force_reset(
         self,
@@ -240,23 +232,26 @@ class TestUpdate:
         assert user.force_reset is False
         assert row.force_reset is False
 
-    @pytest.mark.parametrize("groups", [0, 1, 2])
+    @pytest.mark.parametrize("number_of_groups", [1, 2, 3])
     async def test_set_groups(
         self,
         data_layer: DataLayer,
         fake2: DataFaker,
         pg: AsyncEngine,
         snapshot: SnapshotAssertion,
-        groups,
+        number_of_groups,
     ):
         """
         Test that setting ``groups`` works as expected.
         """
+
         user = await fake2.users.create()
+        groups = [await fake2.groups.create() for _ in range(number_of_groups)]
 
         user = await data_layer.users.update(
-            user.id, UpdateUserRequest(groups=[(await fake2.groups.create()).id])
+            user.id, UpdateUserRequest(groups=[groups[0].id])
         )
+        groups.pop(0)
 
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
