@@ -133,8 +133,7 @@ class TestCreate:
             matcher=_last_password_change_matcher,
         )
 
-        async with (AsyncSession(pg) as session):
-            row = await session.get(SQLUser, 1)
+        row = await get_row_by_id(pg, SQLUser, 1)
 
         assert row.to_dict() == snapshot(
             name="pg",
