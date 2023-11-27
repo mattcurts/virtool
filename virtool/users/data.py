@@ -1,11 +1,10 @@
 import asyncio
 import random
-from typing import Any
 
 
 from pymongo.errors import DuplicateKeyError
 from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import selectinload
 from virtool_core.models.roles import AdministratorRole
 from virtool_core.models.user import User, UserSearchResult
@@ -19,22 +18,19 @@ from virtool.authorization.relationships import AdministratorRoleAssignment
 from virtool.data.domain import DataLayerDomain
 from virtool.data.errors import ResourceConflictError, ResourceNotFoundError
 from virtool.data.events import emits, Operation
-from virtool.data.topg import compose_legacy_id_expression, both_transactions
+from virtool.data.topg import both_transactions
 from virtool.data.transforms import apply_transforms
 from virtool.errors import DatabaseError
-from virtool.groups.pg import merge_group_permissions, SQLGroup
+from virtool.groups.pg import SQLGroup
 from virtool.groups.transforms import AttachPrimaryGroupTransform, AttachGroupsTransform
 from virtool.mongo.core import Mongo
 from virtool.mongo.utils import id_exists
 from virtool.users.db import (
     B2CUserAttributes,
-    compose_groups_update,
     update_mongo_user,
 )
 from virtool.users.mongo import (
     create_user,
-    update_keys,
-    compose_primary_group_update,
 )
 from virtool.users.oas import UpdateUserRequest
 from virtool.users.pg import SQLUser
