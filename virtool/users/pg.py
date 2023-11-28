@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy import Column, ForeignKey, Table, CheckConstraint, select, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from virtool.groups.pg import SQLGroup
@@ -37,6 +37,18 @@ class SQLUser(Base):
 
     primary_group_id: Mapped[int | None] = mapped_column(ForeignKey("groups.id"))
     primary_group: Mapped[SQLGroup | None] = relationship()
+    CheckConstraint(
+        primary_group_id.in_(
+            select(
+                Column(
+                    "group_id",
+                    Integer(),
+                    ForeignKey("groups.id"),
+                )
+            )
+        ),
+        name="primary_group_in_groups",
+    )
 
     def __repr__(self):
         params = ", ".join(

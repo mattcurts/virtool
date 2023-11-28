@@ -427,6 +427,7 @@ class UsersData(DataLayerDomain):
                     raise ResourceConflictError(str(err))
 
             if "primary_group" in data:
+                user.primary_group_id = data["primary_group"]
                 try:
                     primary_group = (
                         await virtool.users.mongo.compose_primary_group_update(
@@ -437,18 +438,13 @@ class UsersData(DataLayerDomain):
                             user_id,
                         )
                     )
-                    user.primary_group_id = data["primary_group"]
-                    user.primary_group = (
-                        await pg_session.execute(
-                            select(SQLGroup).where(SQLGroup.id == data["primary_group"])
-                        )
-                    ).scalar()
+                    await pg_session.execute(
+                        select(SQLUser, SQLGroup).join_from(SQLUser, SQLGroup)
+                    )
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
 
-                if user.primary_group not in user.groups:
-                    raise DatabaseError("User not in Primary Group")
                 updates.update(primary_group)
 
             if "active" in data:
