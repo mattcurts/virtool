@@ -18,16 +18,16 @@ from virtool.authorization.relationships import AdministratorRoleAssignment
 from virtool.data.domain import DataLayerDomain
 from virtool.data.errors import ResourceConflictError, ResourceNotFoundError
 from virtool.data.events import emits, Operation
-from virtool.data.topg import both_transactions
+from virtool.data.topg import both_transactions, compose_legacy_id_expression
 from virtool.data.transforms import apply_transforms
 from virtool.errors import DatabaseError
-from virtool.groups.pg import SQLGroup
+from virtool.groups.pg import SQLGroup, merge_group_permissions
 from virtool.groups.transforms import AttachPrimaryGroupTransform, AttachGroupsTransform
 from virtool.mongo.core import Mongo
 from virtool.mongo.utils import id_exists
 from virtool.users.db import (
     B2CUserAttributes,
-    update_mongo_user,
+    compose_groups_update,
 )
 from virtool.users.mongo import (
     create_user,
@@ -353,9 +353,6 @@ class UsersData(DataLayerDomain):
             pg_session,
         ):
             data = data.dict(exclude_unset=True)
-            mongo_user = await update_mongo_user(
-                user_id, self._mongo, self._pg, data, mongo_session, self
-            )
 
             user = (
                 await pg_session.execute(
@@ -366,10 +363,17 @@ class UsersData(DataLayerDomain):
                 )
             ).scalar()
 
-            if user is None:
-                return mongo_user
+            document = await self._mongo.users.find_one(
+                {"_id": user_id}, ["administrator", "groups"]
+            )
+
+            if document is None:
+                raise ResourceNotFoundError("User does not exist")
+
+            updates = {}
 
             if "administrator" in data:
+                updates["administrator"] = data["administrator"]
                 user.administrator = data["administrator"]
 
                 role_assignment = AdministratorRoleAssignment(
@@ -377,21 +381,38 @@ class UsersData(DataLayerDomain):
                 )
 
                 if data["administrator"]:
+                    updates["administrator"] = data["administrator"]
                     await self._authorization_client.add(role_assignment)
                 else:
                     await self._authorization_client.remove(role_assignment)
 
             if "force_reset" in data:
+                updates.update(
+                    {
+                        "force_reset": data["force_reset"],
+                        "invalidate_sessions": True,
+                    }
+                )
                 user.force_reset = data["force_reset"]
                 user.invalidate_sessions = True
 
             if "password" in data:
+                updates.update(
+                    {
+                        "password": virtool.users.utils.hash_password(data["password"]),
+                        "last_password_change": virtool.utils.timestamp(),
+                        "invalidate_sessions": True,
+                    }
+                )
                 user.password = virtool.users.utils.hash_password(data["password"])
                 user.last_password_change = virtool.utils.timestamp()
                 user.invalidate_sessions = True
 
             if "groups" in data:
                 try:
+                    updates.update(
+                        await compose_groups_update(self._pg, data["groups"])
+                    )
                     user.groups = (
                         (
                             await pg_session.execute(
@@ -407,21 +428,58 @@ class UsersData(DataLayerDomain):
 
             if "primary_group" in data:
                 try:
+                    primary_group = (
+                        await virtool.users.mongo.compose_primary_group_update(
+                            self._mongo,
+                            self._pg,
+                            data.get("groups", []),
+                            data["primary_group"],
+                            user_id,
+                        )
+                    )
                     user.primary_group_id = data["primary_group"]
                     user.primary_group = (
                         await pg_session.execute(
                             select(SQLGroup).where(SQLGroup.id == data["primary_group"])
                         )
                     ).scalar()
-                    if user.primary_group not in user.groups:
-                        raise DatabaseError("User not in Primary Group")
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
 
+                if user.primary_group not in user.groups:
+                    raise DatabaseError("User not in Primary Group")
+                updates.update(primary_group)
+
             if "active" in data:
+                updates.update({"active": data["active"], "invalidate_sessions": True})
                 user.active = data["active"]
                 user.invalidate_sessions = True
+
+            if updates:
+                document = await self._mongo.users.find_one_and_update(
+                    {"_id": user_id}, {"$set": updates}, session=mongo_session
+                )
+
+                groups = []
+
+                if document["groups"]:
+                    result = await pg_session.execute(
+                        select(SQLGroup).where(
+                            compose_legacy_id_expression(SQLGroup, document["groups"])
+                        )
+                    )
+
+                    groups = [group.to_dict() for group in result.scalars().all()]
+
+                await virtool.users.mongo.update_keys(
+                    self._mongo,
+                    user_id,
+                    document["administrator"],
+                    document["groups"],
+                    merge_group_permissions(groups),
+                    session=mongo_session,
+                )
 
         return await self.get(user_id)
 
