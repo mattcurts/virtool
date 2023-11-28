@@ -633,6 +633,7 @@
 # ---
 # name: TestUpdate.test_set_groups[2][groups_after]
   list([
+    GroupMinimal(id=2, legacy_id=None, name='actors'),
   ])
 # ---
 # name: TestUpdate.test_set_groups[2][groups_before]
@@ -642,6 +643,7 @@
 # ---
 # name: TestUpdate.test_set_groups[2][groups_mapping_after]
   list([
+    {'user_id': 1, 'group_id': 2},
   ])
 # ---
 # name: TestUpdate.test_set_groups[2][groups_mapping_before]
@@ -661,6 +663,11 @@
     'b2c_oid': None,
     'force_reset': False,
     'groups': list([
+      dict({
+        'id': 2,
+        'legacy_id': None,
+        'name': 'actors',
+      }),
     ]),
     'handle': 'leeashley',
     'id': 'bf1b993c',
@@ -720,6 +727,8 @@
 # ---
 # name: TestUpdate.test_set_groups[3][groups_after]
   list([
+    GroupMinimal(id=2, legacy_id=None, name='actors'),
+    GroupMinimal(id=3, legacy_id=None, name='oceanographers'),
   ])
 # ---
 # name: TestUpdate.test_set_groups[3][groups_before]
@@ -729,6 +738,8 @@
 # ---
 # name: TestUpdate.test_set_groups[3][groups_mapping_after]
   list([
+    {'user_id': 1, 'group_id': 2},
+    {'user_id': 1, 'group_id': 3},
   ])
 # ---
 # name: TestUpdate.test_set_groups[3][groups_mapping_before]
@@ -748,6 +759,16 @@
     'b2c_oid': None,
     'force_reset': False,
     'groups': list([
+      dict({
+        'id': 2,
+        'legacy_id': None,
+        'name': 'actors',
+      }),
+      dict({
+        'id': 3,
+        'legacy_id': None,
+        'name': 'oceanographers',
+      }),
     ]),
     'handle': 'leeashley',
     'id': 'bf1b993c',

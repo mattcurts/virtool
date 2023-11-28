@@ -245,12 +245,12 @@ class TestUpdate:
         """
 
         user = await fake2.users.create()
-        groups = [await fake2.groups.create() for _ in range(number_of_groups)]
+        test_groups = [await fake2.groups.create() for _ in range(number_of_groups)]
 
         user = await data_layer.users.update(
-            user.id, UpdateUserRequest(groups=[groups[0].id])
+            user.id, UpdateUserRequest(groups=[test_groups[0].id])
         )
-        groups.pop(0)
+        test_groups.pop(0)
 
         async with (AsyncSession(pg) as session):
             groups = await session.execute(
@@ -267,7 +267,7 @@ class TestUpdate:
         assert row == snapshot(name="pg_before")
 
         user = await data_layer.users.update(
-            user.id, UpdateUserRequest(groups=[group.id for group in groups])
+            user.id, UpdateUserRequest(groups=[group.id for group in test_groups])
         )
 
         async with (AsyncSession(pg) as session):
