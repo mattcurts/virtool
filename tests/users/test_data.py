@@ -258,7 +258,7 @@ class TestUpdate:
                     user_group_associations.c.user_id == SQLUser.id
                 )
             )
-            row = await session.get(SQLUser, 1)
+            row = await get_row_by_id(pg, SQLUser, 1)
         assert groups.mappings().all() == snapshot(name="groups_mapping_before")
         assert user.groups == snapshot(name="groups_before")
         assert user == snapshot(
