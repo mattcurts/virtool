@@ -2,17 +2,46 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Column, ForeignKey, Table, CheckConstraint, select, Integer
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Table,
+    CheckConstraint,
+    select,
+    Integer,
+    Boolean,
+    text,
+    Index,
+    UniqueConstraint,
+    event,
+    ForeignKeyConstraint,
+    true,
+    exists,
+)
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from virtool.groups.pg import SQLGroup
 from virtool.pg.base import Base
 
+from sqlalchemy import Table, Column, Integer, ForeignKey, UniqueConstraint
+
+from sqlalchemy import CheckConstraint
+
 user_group_associations = Table(
     "user_group_associations",
     Base.metadata,
-    Column("user_id", ForeignKey("users.id", ondelete="CASCADE")),
-    Column("group_id", ForeignKey("groups.id", ondelete="CASCADE")),
+    # Column("id", Integer, primary_key=True),
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("group_id", ForeignKey("groups.id", ondelete="CASCADE"), nullable=False),
+    Column("is_primary", Boolean, default=False),
+    Index(
+        "primary_group_in_groups",
+        "is_primary",
+        "user_id",
+        unique=True,
+        postgresql_where="is_primary = true",
+    ),
 )
 
 
@@ -37,18 +66,6 @@ class SQLUser(Base):
 
     primary_group_id: Mapped[int | None] = mapped_column(ForeignKey("groups.id"))
     primary_group: Mapped[SQLGroup | None] = relationship()
-    CheckConstraint(
-        primary_group_id.in_(
-            select(
-                Column(
-                    "group_id",
-                    Integer(),
-                    ForeignKey("groups.id"),
-                )
-            )
-        ),
-        name="primary_group_in_groups",
-    )
 
     def __repr__(self):
         params = ", ".join(
