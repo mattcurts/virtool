@@ -559,7 +559,7 @@
 # ---
 # name: TestUpdate.test_set_groups[1][groups_mapping_before]
   list([
-    {'user_id': 1, 'group_id': 1},
+    {'user_id': 1, 'group_id': 1, 'is_primary': False},
   ])
 # ---
 # name: TestUpdate.test_set_groups[1][mongo_after]
@@ -643,12 +643,12 @@
 # ---
 # name: TestUpdate.test_set_groups[2][groups_mapping_after]
   list([
-    {'user_id': 1, 'group_id': 2},
+    {'user_id': 1, 'group_id': 2, 'is_primary': False},
   ])
 # ---
 # name: TestUpdate.test_set_groups[2][groups_mapping_before]
   list([
-    {'user_id': 1, 'group_id': 1},
+    {'user_id': 1, 'group_id': 1, 'is_primary': False},
   ])
 # ---
 # name: TestUpdate.test_set_groups[2][mongo_after]
@@ -738,13 +738,13 @@
 # ---
 # name: TestUpdate.test_set_groups[3][groups_mapping_after]
   list([
-    {'user_id': 1, 'group_id': 2},
-    {'user_id': 1, 'group_id': 3},
+    {'user_id': 1, 'group_id': 2, 'is_primary': False},
+    {'user_id': 1, 'group_id': 3, 'is_primary': False},
   ])
 # ---
 # name: TestUpdate.test_set_groups[3][groups_mapping_before]
   list([
-    {'user_id': 1, 'group_id': 1},
+    {'user_id': 1, 'group_id': 1, 'is_primary': False},
   ])
 # ---
 # name: TestUpdate.test_set_groups[3][mongo_after]
