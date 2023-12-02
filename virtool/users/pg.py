@@ -3,20 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Table,
-    CheckConstraint,
-    select,
-    Integer,
     Boolean,
-    text,
     Index,
-    UniqueConstraint,
-    event,
-    ForeignKeyConstraint,
-    true,
-    exists,
 )
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -24,9 +12,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from virtool.groups.pg import SQLGroup
 from virtool.pg.base import Base
 
-from sqlalchemy import Table, Column, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy import Table, Column, ForeignKey
 
-from sqlalchemy import CheckConstraint
 
 user_group_associations = Table(
     "user_group_associations",
