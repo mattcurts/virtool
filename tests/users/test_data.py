@@ -231,6 +231,31 @@ class TestUpdate:
         assert user.force_reset is False
         assert row.force_reset is False
 
+    async def test_primary_groups(
+        self,
+        data_layer: DataLayer,
+        fake2: DataFaker,
+    ):
+        """
+        Test that primary group switching works
+        """
+
+        user = await fake2.users.create()
+        test_group = await fake2.groups.create()
+        test_group_2 = await fake2.groups.create()
+
+        user = await data_layer.users.update(
+            user.id,
+            UpdateUserRequest(groups=[test_group.id], primary_group=test_group.id),
+        )
+
+        user = await data_layer.users.update(
+            user.id,
+            UpdateUserRequest(
+                groups=[test_group.id, test_group_2.id], primary_group=test_group_2.id
+            ),
+        )
+
     @pytest.mark.parametrize("number_of_groups", [1, 2, 3])
     async def test_set_groups(
         self,
