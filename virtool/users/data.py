@@ -33,7 +33,7 @@ from virtool.users.mongo import (
     create_user,
 )
 from virtool.users.oas import UpdateUserRequest
-from virtool.users.pg import SQLUser
+from virtool.users.pg import SQLUser, user_group_associations
 from virtool.users.transforms import AttachPermissionsTransform
 from virtool.utils import base_processor
 
@@ -410,9 +410,6 @@ class UsersData(DataLayerDomain):
 
             if "groups" in data:
                 try:
-                    updates.update(
-                        await compose_groups_update(self._pg, data["groups"])
-                    )
                     user.groups = (
                         (
                             await pg_session.execute(
@@ -422,12 +419,14 @@ class UsersData(DataLayerDomain):
                         .scalars()
                         .all()
                     )
+                    updates.update(
+                        await compose_groups_update(self._pg, data["groups"])
+                    )
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
 
             if "primary_group" in data:
-                user.primary_group_id = data["primary_group"]
                 try:
                     primary_group = (
                         await virtool.users.mongo.compose_primary_group_update(
@@ -438,9 +437,36 @@ class UsersData(DataLayerDomain):
                             user_id,
                         )
                     )
+
+                    user.primary_group_id = data["primary_group"]
+
+                    user.primary_group = (
+                        await pg_session.execute(
+                            select(SQLGroup).where(SQLGroup.id == data["primary_group"])
+                        )
+                    ).scalar()
+
                     await pg_session.execute(
-                        select(SQLUser, SQLGroup).join_from(SQLUser, SQLGroup)
+                        update(user_group_associations)
+                        .where(user_group_associations.c.user_id == user.id)
+                        .where(user_group_associations.c.is_primary == True)
+                        .values(is_primary=False)
                     )
+
+                    row_count = (
+                        await pg_session.execute(
+                            update(user_group_associations)
+                            .where(user_group_associations.c.user_id == user.id)
+                            .where(
+                                user_group_associations.c.group_id
+                                == data["primary_group"]
+                            )
+                            .values(is_primary=True)
+                        )
+                    ).rowcount
+
+                    if row_count != 1:
+                        raise DatabaseError("User is not member of primary group")
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
