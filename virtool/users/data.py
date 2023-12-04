@@ -438,35 +438,21 @@ class UsersData(DataLayerDomain):
                         )
                     )
 
-                    user.primary_group_id = data["primary_group"]
-
-                    user.primary_group = (
-                        await pg_session.execute(
-                            select(SQLGroup).where(SQLGroup.id == data["primary_group"])
-                        )
-                    ).scalar()
+                    await pg_session.execute(
+                        update(user_group_associations)
+                        .where(user_group_associations.c.is_primary == True)
+                        .where(user_group_associations.c.user_id == user.id)
+                        .values(is_primary=False)
+                    )
 
                     await pg_session.execute(
                         update(user_group_associations)
                         .where(user_group_associations.c.user_id == user.id)
-                        .where(user_group_associations.c.is_primary == True)
-                        .values(is_primary=False)
-                    )
-
-                    row_count = (
-                        await pg_session.execute(
-                            update(user_group_associations)
-                            .where(user_group_associations.c.user_id == user.id)
-                            .where(
-                                user_group_associations.c.group_id
-                                == data["primary_group"]
-                            )
-                            .values(is_primary=True)
+                        .where(
+                            user_group_associations.c.group_id == data["primary_group"]
                         )
-                    ).rowcount
-
-                    if row_count != 1:
-                        raise DatabaseError("User is not member of primary group")
+                        .values(is_primary=True)
+                    )
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
