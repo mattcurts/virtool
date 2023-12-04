@@ -548,9 +548,27 @@
   list([
   ])
 # ---
+# name: TestUpdate.test_set_groups[1][groups_after_mongo]
+  list([
+  ])
+# ---
+# name: TestUpdate.test_set_groups[1][groups_after_pg]
+  list([
+  ])
+# ---
 # name: TestUpdate.test_set_groups[1][groups_before]
   list([
     GroupMinimal(id=1, legacy_id=None, name='gaffers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[1][groups_before_mongo]
+  list([
+    GroupMinimal(id=1, legacy_id=None, name='gaffers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[1][groups_before_pg]
+  list([
+    (<SQLGroup(id=1, legacy_id=None, name=gaffers, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>,),
   ])
 # ---
 # name: TestUpdate.test_set_groups[1][groups_mapping_after]
@@ -636,9 +654,29 @@
     GroupMinimal(id=2, legacy_id=None, name='actors'),
   ])
 # ---
+# name: TestUpdate.test_set_groups[2][groups_after_mongo]
+  list([
+    GroupMinimal(id=2, legacy_id=None, name='actors'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[2][groups_after_pg]
+  list([
+    (<SQLGroup(id=2, legacy_id=None, name=actors, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>,),
+  ])
+# ---
 # name: TestUpdate.test_set_groups[2][groups_before]
   list([
     GroupMinimal(id=1, legacy_id=None, name='gaffers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[2][groups_before_mongo]
+  list([
+    GroupMinimal(id=1, legacy_id=None, name='gaffers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[2][groups_before_pg]
+  list([
+    (<SQLGroup(id=1, legacy_id=None, name=gaffers, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>,),
   ])
 # ---
 # name: TestUpdate.test_set_groups[2][groups_mapping_after]
@@ -731,9 +769,31 @@
     GroupMinimal(id=3, legacy_id=None, name='oceanographers'),
   ])
 # ---
+# name: TestUpdate.test_set_groups[3][groups_after_mongo]
+  list([
+    GroupMinimal(id=2, legacy_id=None, name='actors'),
+    GroupMinimal(id=3, legacy_id=None, name='oceanographers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[3][groups_after_pg]
+  list([
+    (<SQLGroup(id=2, legacy_id=None, name=actors, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>,),
+    (<SQLGroup(id=3, legacy_id=None, name=oceanographers, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>,),
+  ])
+# ---
 # name: TestUpdate.test_set_groups[3][groups_before]
   list([
     GroupMinimal(id=1, legacy_id=None, name='gaffers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[3][groups_before_mongo]
+  list([
+    GroupMinimal(id=1, legacy_id=None, name='gaffers'),
+  ])
+# ---
+# name: TestUpdate.test_set_groups[3][groups_before_pg]
+  list([
+    (<SQLGroup(id=1, legacy_id=None, name=gaffers, permissions={'cancel_job': False, 'create_ref': False, 'modify_hmm': False, 'remove_job': False, 'remove_file': False, 'upload_file': False, 'create_sample': False, 'modify_subtraction': False})>,),
   ])
 # ---
 # name: TestUpdate.test_set_groups[3][groups_mapping_after]
