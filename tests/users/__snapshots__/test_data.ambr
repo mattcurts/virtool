@@ -61,7 +61,6 @@
     'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
-    'primary_group_id': None,
   })
 # ---
 # name: TestCreate.test_force_reset[False]
@@ -126,7 +125,6 @@
     'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
-    'primary_group_id': None,
   })
 # ---
 # name: TestCreate.test_force_reset[True]
@@ -191,7 +189,6 @@
     'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
-    'primary_group_id': None,
   })
 # ---
 # name: TestCreate.test_no_force_reset[mongo]
@@ -256,7 +253,6 @@
     'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
-    'primary_group_id': None,
   })
 # ---
 # name: TestUpdate.test_administrator[False][mongo]
@@ -322,7 +318,6 @@
     'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
-    'primary_group_id': None,
   })
 # ---
 # name: TestUpdate.test_administrator[True][mongo]
@@ -388,7 +383,6 @@
     'invalidate_sessions': False,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
-    'primary_group_id': None,
   })
 # ---
 # name: TestUpdate.test_password[db]
@@ -454,7 +448,6 @@
     'invalidate_sessions': True,
     'last_password_change': datetime,
     'legacy_id': 'bf1b993c',
-    'primary_group_id': None,
   })
 # ---
 # name: TestUpdate.test_set_groups[0][groups_after]
@@ -644,10 +637,10 @@
   })
 # ---
 # name: TestUpdate.test_set_groups[1][pg_after]
-  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime')>
 # ---
 # name: TestUpdate.test_set_groups[1][pg_before]
-  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime')>
 # ---
 # name: TestUpdate.test_set_groups[2][groups_after]
   list([
@@ -758,10 +751,10 @@
   })
 # ---
 # name: TestUpdate.test_set_groups[2][pg_after]
-  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime')>
 # ---
 # name: TestUpdate.test_set_groups[2][pg_before]
-  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime')>
 # ---
 # name: TestUpdate.test_set_groups[3][groups_after]
   list([
@@ -881,10 +874,10 @@
   })
 # ---
 # name: TestUpdate.test_set_groups[3][pg_after]
-  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime')>
 # ---
 # name: TestUpdate.test_set_groups[3][pg_before]
-  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime', primary_group_id='None')>
+  <SQLUser(id='1', legacy_id='bf1b993c', active='True', administrator='False', b2c_display_name='', b2c_given_name='', b2c_family_name='', b2c_oid='', force_reset='False', handle='leeashley', invalidate_sessions='False', last_password_change='datetime')>
 # ---
 # name: TestUpdate.test_set_groups[groups_1]
   list([
