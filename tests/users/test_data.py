@@ -13,6 +13,7 @@ from virtool.authorization.relationships import AdministratorRoleAssignment
 from virtool.data.errors import ResourceConflictError, ResourceNotFoundError
 from virtool.data.layer import DataLayer
 from virtool.fake.next import DataFaker
+from virtool.groups.pg import SQLGroup
 from virtool.mongo.core import Mongo
 from virtool.mongo.utils import get_one_field
 from virtool.pg.utils import get_row_by_id
@@ -283,9 +284,18 @@ class TestUpdate:
                     user_group_associations.c.user_id == SQLUser.id
                 )
             )
+
+            groups_detailed = await session.execute(
+                select(SQLGroup)
+                .select_from(SQLUser)
+                .join(user_group_associations)
+                .join(SQLGroup)
+            )
+
             row = await get_row_by_id(pg, SQLUser, 1)
         assert groups.mappings().all() == snapshot(name="groups_mapping_before")
-        assert user.groups == snapshot(name="groups_before")
+        assert groups_detailed.all() == snapshot(name="groups_before_pg")
+        assert user.groups == snapshot(name="groups_before_mongo")
         assert user == snapshot(
             name="mongo_before", matcher=_last_password_change_matcher
         )
@@ -301,9 +311,18 @@ class TestUpdate:
                     user_group_associations.c.user_id == SQLUser.id
                 )
             )
+
+            groups_detailed = await session.execute(
+                select(SQLGroup)
+                .select_from(SQLUser)
+                .join(user_group_associations)
+                .join(SQLGroup)
+            )
+
             row = await session.get(SQLUser, 1)
         assert groups.mappings().all() == snapshot(name="groups_mapping_after")
-        assert user.groups == snapshot(name="groups_after")
+        assert groups_detailed.all() == snapshot(name="groups_after_pg")
+        assert user.groups == snapshot(name="groups_after_mongo")
         assert user == snapshot(
             name="mongo_after", matcher=_last_password_change_matcher
         )
