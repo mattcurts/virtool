@@ -7,16 +7,16 @@ TODO: Drop legacy group id support when we fully migrate to integer ids.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-import virtool
-from virtool.data.errors import ResourceConflictError, ResourceNotFoundError
+
+from virtool.data.errors import ResourceConflictError
 from virtool.data.topg import compose_legacy_id_expression
-from virtool.errors import DatabaseError
-from virtool.groups.pg import SQLGroup, merge_group_permissions
+
+from virtool.groups.pg import SQLGroup
 
 ATTACH_PROJECTION = ["_id", "administrator", "handle"]
 

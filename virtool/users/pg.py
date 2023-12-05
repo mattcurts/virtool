@@ -6,19 +6,16 @@ from sqlalchemy import (
     Boolean,
     Index,
 )
-
+from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from virtool.groups.pg import SQLGroup
 from virtool.pg.base import Base
 
-from sqlalchemy import Table, Column, ForeignKey
-
 
 user_group_associations = Table(
     "user_group_associations",
     Base.metadata,
-    # Column("id", Integer, primary_key=True),
     Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
     Column("group_id", ForeignKey("groups.id", ondelete="CASCADE"), nullable=False),
     Column("is_primary", Boolean, default=False),
