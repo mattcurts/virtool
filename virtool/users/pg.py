@@ -12,7 +12,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from virtool.groups.pg import SQLGroup
 from virtool.pg.base import Base
 
-
 user_group_associations = Table(
     "user_group_associations",
     Base.metadata,
