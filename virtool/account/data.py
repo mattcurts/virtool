@@ -1,6 +1,7 @@
 from typing import Union, Tuple, List
 
 from aioredis import Redis
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncEngine
 from virtool_core.models.account import Account
 from virtool_core.models.account import AccountSettings, APIKey
@@ -22,11 +23,13 @@ from virtool.administrators.oas import UpdateUserRequest
 from virtool.authorization.client import AuthorizationClient
 from virtool.data.domain import DataLayerDomain
 from virtool.data.errors import ResourceError, ResourceNotFoundError
+from virtool.data.topg import both_transactions
 from virtool.data.transforms import apply_transforms
 from virtool.groups.transforms import AttachGroupsTransform
 from virtool.mongo.core import Mongo
 from virtool.mongo.utils import get_one_field
 from virtool.users.mongo import validate_credentials
+from virtool.users.pg import SQLUser
 from virtool.users.utils import limit_permissions
 from virtool.utils import base_processor
 
@@ -88,7 +91,7 @@ class AccountData(DataLayerDomain):
         :param data: the update to the account
         :return: the user account
         """
-        update = {}
+        updates = {}
 
         data_dict = data.dict(exclude_unset=True)
 
@@ -98,12 +101,31 @@ class AccountData(DataLayerDomain):
             ):
                 raise ResourceError("Invalid credentials")
 
-            update = compose_password_update(data_dict["password"])
+            updates = compose_password_update(data_dict["password"])
 
         if "email" in data_dict:
-            update["email"] = data_dict["email"]
+            updates["email"] = data_dict["email"]
 
-        await self._mongo.users.update_one({"_id": user_id}, {"$set": update})
+        async with both_transactions(self._mongo, self._pg) as (
+            mongo_session,
+            pg_session,
+        ):
+            await self._mongo.users.update_one(
+                {"_id": user_id}, {"$set": updates}, session=mongo_session
+            )
+            if "password" in updates:
+                await pg_session.execute(
+                    update(SQLUser)
+                    .where(SQLUser.legacy_id == user_id)
+                    .values(
+                        {
+                            "password": updates["password"],
+                            "invalidate_sessions": False,
+                            "last_password_change": updates["last_password_change"],
+                            "force_reset": False,
+                        }
+                    )
+                )
 
         return await self.get(user_id)
 

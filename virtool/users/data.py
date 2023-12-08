@@ -1,11 +1,9 @@
 import asyncio
 import random
 
-
 from pymongo.errors import DuplicateKeyError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.orm import selectinload
 from virtool_core.models.roles import AdministratorRole
 from virtool_core.models.user import User, UserSearchResult
 
