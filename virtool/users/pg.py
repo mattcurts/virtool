@@ -66,16 +66,15 @@ class SQLUser(Base):
         creator=lambda group: UserGroup(group=group),
     )
 
-    primary_group_association: Mapped[List[UserGroup]] = relationship(
+    primary_group_association: Mapped[UserGroup] = relationship(
         back_populates="user",
         lazy="joined",
         primaryjoin="and_(user_group.c.user_id == SQLUser.id, user_group.c.is_primary == True)",
     )
 
-    primary_group: AssociationProxy[List[SQLGroup]] = AssociationProxy(
+    primary_group: AssociationProxy[SQLGroup] = AssociationProxy(
         "primary_group_association",
         "group",
-        creator=lambda group: UserGroup(group=group),
     )
 
     def to_dict(self):
