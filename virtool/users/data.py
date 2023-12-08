@@ -33,7 +33,7 @@ from virtool.users.mongo import (
     create_user,
 )
 from virtool.users.oas import UpdateUserRequest
-from virtool.users.pg import SQLUser, user_group_associations
+from virtool.users.pg import SQLUser, UserGroup
 from virtool.users.transforms import AttachPermissionsTransform
 from virtool.utils import base_processor
 
@@ -356,10 +356,7 @@ class UsersData(DataLayerDomain):
 
             user = (
                 await pg_session.execute(
-                    select(SQLUser)
-                    .where(SQLUser.legacy_id == user_id)
-                    .limit(1)
-                    .options(selectinload(SQLUser.groups))
+                    select(SQLUser).where(SQLUser.legacy_id == user_id).limit(1)
                 )
             ).scalar()
 
@@ -439,20 +436,23 @@ class UsersData(DataLayerDomain):
                     )
 
                     await pg_session.execute(
-                        update(user_group_associations)
-                        .where(user_group_associations.c.is_primary == True)
-                        .where(user_group_associations.c.user_id == user.id)
+                        update(UserGroup)
+                        .where(UserGroup.is_primary == True)
+                        .where(UserGroup.user_id == user.id)
                         .values(is_primary=False)
                     )
 
-                    await pg_session.execute(
-                        update(user_group_associations)
-                        .where(user_group_associations.c.user_id == user.id)
-                        .where(
-                            user_group_associations.c.group_id == data["primary_group"]
-                        )
+                    result = await pg_session.execute(
+                        update(UserGroup)
+                        .where(UserGroup.user_id == user.id)
+                        .where(UserGroup.group_id == data["primary_group"])
                         .values(is_primary=True)
                     )
+
+                    if result.rowcount == 0:
+                        raise ResourceConflictError(
+                            "User must be a member of their primary group"
+                        )
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))

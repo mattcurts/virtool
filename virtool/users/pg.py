@@ -1,31 +1,42 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import List
 
 from sqlalchemy import (
     Boolean,
     Index,
 )
 from sqlalchemy import Table, Column, ForeignKey
+from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from virtool.groups.pg import SQLGroup
 from virtool.pg.base import Base
 
-user_group_associations = Table(
-    "user_group_associations",
-    Base.metadata,
-    Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("group_id", ForeignKey("groups.id", ondelete="CASCADE"), nullable=False),
-    Column("is_primary", Boolean, default=False),
+
+class UserGroup(Base):
+    __tablename__ = "user_group"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    group_id: Mapped[int] = mapped_column(
+        ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    is_primary: Mapped[bool] = mapped_column(default=False)
+
+    group: Mapped["SQLGroup"] = relationship(lazy="joined")
+    user: Mapped["SQLUser"] = relationship(back_populates="user_group_associations")
+
     Index(
-        "primary_group_in_groups",
-        "is_primary",
-        "user_id",
+        "primary_group_unique",
+        is_primary,
+        user_id,
         unique=True,
-        postgresql_where="is_primary = true",
+        postgresql_where=(is_primary == True),
     ),
-)
 
 
 class SQLUser(Base):
@@ -45,7 +56,33 @@ class SQLUser(Base):
     last_password_change: Mapped[datetime]
     password: Mapped[bytes | None]
 
-    groups: Mapped[list[SQLGroup]] = relationship(secondary=user_group_associations)
+    user_group_associations: Mapped[List[UserGroup]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", lazy="joined"
+    )
+
+    groups: AssociationProxy[List[SQLGroup]] = AssociationProxy(
+        "user_group_associations",
+        "group",
+        creator=lambda group: UserGroup(group=group),
+    )
+
+    primary_group_association: Mapped[List[UserGroup]] = relationship(
+        back_populates="user",
+        lazy="joined",
+        primaryjoin="and_(user_group.c.user_id == SQLUser.id, user_group.c.is_primary == True)",
+    )
+
+    primary_group: AssociationProxy[List[SQLGroup]] = AssociationProxy(
+        "primary_group_association",
+        "group",
+        creator=lambda group: UserGroup(group=group),
+    )
+
+    def to_dict(self):
+        base_dict = super().to_dict()
+        base_dict["groups"] = self.groups
+        base_dict["primary_group"] = self.primary_group
+        return base_dict
 
     def __repr__(self):
         params = ", ".join(

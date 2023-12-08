@@ -128,7 +128,7 @@ async def pg(engine: AsyncEngine):
                     spaces,
                     tasks,
                     uploads,
-                    user_group_associations,
+                    user_group,
                     users
                 RESTART IDENTITY
                 """
