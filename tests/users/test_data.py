@@ -272,7 +272,7 @@ class TestUpdate:
 
         assert user_obj == snapshot(name="obj", matcher=_last_password_change_matcher)
 
-        (row, document) = await gather(
+        (row, document) = await asyncio.gather(
             *[get_row_by_id(pg, SQLUser, 1), mongo.users.find_one({"_id": user.id})]
         )
 
@@ -312,7 +312,7 @@ class TestUpdate:
         if number_of_groups == 0:
             groups.pop(0)
 
-        (row, document) = await gather(
+        (row, document) = await asyncio.gather(
             *[get_row_by_id(pg, SQLUser, 1), mongo.users.find_one({"_id": user.id})]
         )
 
@@ -330,7 +330,7 @@ class TestUpdate:
             user.id, UpdateUserRequest(groups=[group.id for group in groups])
         )
 
-        (row, document) = await gather(
+        (row, document) = await asyncio.gather(
             *[get_row_by_id(pg, SQLUser, 1), mongo.users.find_one({"_id": user.id})]
         )
 
