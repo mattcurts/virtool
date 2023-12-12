@@ -365,106 +365,113 @@ class UsersData(DataLayerDomain):
             if document is None:
                 raise ResourceNotFoundError("User does not exist")
 
-            updates = {}
+            mongo_updates = {}
+            pg_updates = {}
 
             if "administrator" in data:
-                updates["administrator"] = data["administrator"]
-                user.administrator = data["administrator"]
+                mongo_updates["administrator"] = data["administrator"]
+                pg_updates["administrator"] = data["administrator"]
 
                 role_assignment = AdministratorRoleAssignment(
                     user_id, AdministratorRole.FULL
                 )
 
                 if data["administrator"]:
-                    updates["administrator"] = data["administrator"]
                     await self._authorization_client.add(role_assignment)
                 else:
                     await self._authorization_client.remove(role_assignment)
 
             if "force_reset" in data:
-                updates.update(
+                mongo_updates.update(
                     {
                         "force_reset": data["force_reset"],
                         "invalidate_sessions": True,
                     }
                 )
-                user.force_reset = data["force_reset"]
-                user.invalidate_sessions = True
+                pg_updates.update(
+                    {
+                        "force_reset": data["force_reset"],
+                        "invalidate_sessions": True,
+                    }
+                )
 
             if "password" in data:
-                updates.update(
+                mongo_updates.update(
                     {
                         "password": virtool.users.utils.hash_password(data["password"]),
                         "last_password_change": virtool.utils.timestamp(),
                         "invalidate_sessions": True,
                     }
                 )
-                user.password = virtool.users.utils.hash_password(data["password"])
-                user.last_password_change = virtool.utils.timestamp()
-                user.invalidate_sessions = True
+                pg_updates.update(
+                    {
+                        "password": virtool.users.utils.hash_password(data["password"]),
+                        "last_password_change": virtool.utils.timestamp(),
+                        "invalidate_sessions": True,
+                    }
+                )
 
             if "groups" in data:
                 try:
-                    user.groups = (
-                        (
+                    mongo_updates.update(
+                        await compose_groups_update(self._pg, data["groups"])
+                    )
+
+                    if user:
+                        user.groups = (
                             await pg_session.execute(
                                 select(SQLGroup).where(SQLGroup.id.in_(data["groups"]))
                             )
-                        )
-                        .scalars()
-                        .all()
-                    )
-                    updates.update(
-                        await compose_groups_update(self._pg, data["groups"])
-                    )
+                        ).scalars()
 
                 except DatabaseError as err:
                     raise ResourceConflictError(str(err))
 
             if "primary_group" in data:
-                try:
-                    primary_group = (
-                        await virtool.users.mongo.compose_primary_group_update(
-                            self._mongo,
-                            self._pg,
-                            data.get("groups", []),
-                            data["primary_group"],
-                            user_id,
-                        )
+                mongo_updates.update(
+                    await virtool.users.mongo.compose_primary_group_update(
+                        self._mongo,
+                        self._pg,
+                        data.get("groups", []),
+                        data["primary_group"],
+                        user_id,
                     )
+                )
 
-                    await pg_session.execute(
-                        update(UserGroup)
-                        .where(UserGroup.is_primary == True)
-                        .where(UserGroup.user_id == user.id)
-                        .values(is_primary=False)
-                    )
-
-                    result = await pg_session.execute(
-                        update(UserGroup)
-                        .where(UserGroup.user_id == user.id)
-                        .where(UserGroup.group_id == data["primary_group"])
-                        .values(is_primary=True)
-                    )
-
-                    if result.rowcount == 0:
-                        raise ResourceConflictError(
-                            "User must be a member of their primary group"
+                if user:
+                    try:
+                        await pg_session.execute(
+                            update(UserGroup)
+                            .where(UserGroup.user_id == user.id)
+                            .where(UserGroup.is_primary == True)
+                            .values(is_primary=False)
                         )
 
-                except DatabaseError as err:
-                    raise ResourceConflictError(str(err))
+                        result = await pg_session.execute(
+                            update(UserGroup)
+                            .where(UserGroup.user_id == user.id)
+                            .where(UserGroup.group_id == data["primary_group"])
+                            .values(is_primary=True)
+                        )
 
-                updates.update(primary_group)
+                        if result.rowcount == 0:
+                            raise ResourceConflictError(
+                                "User must be a member of their primary group"
+                            )
+                    except DatabaseError as err:
+                        raise ResourceConflictError(str(err))
 
             if "active" in data:
-                updates.update({"active": data["active"], "invalidate_sessions": True})
-                user.active = data["active"]
-                user.invalidate_sessions = True
+                mongo_updates.update(
+                    {"active": data["active"], "invalidate_sessions": True}
+                )
+                pg_updates.update(
+                    {"active": data["active"], "invalidate_sessions": True}
+                )
 
-            if updates:
+            if mongo_updates:
                 document = await self._mongo.users.find_one_and_update(
-                    {"_id": user_id}, {"$set": updates}, session=mongo_session
+                    {"_id": user_id}, {"$set": mongo_updates}, session=mongo_session
                 )
 
                 groups = []
@@ -486,6 +493,13 @@ class UsersData(DataLayerDomain):
                     merge_group_permissions(groups),
                     session=mongo_session,
                 )
+
+                if pg_updates:
+                    await pg_session.execute(
+                        update(SQLUser)
+                        .where(SQLUser.legacy_id == user_id)
+                        .values(**pg_updates)
+                    )
 
         return await self.get(user_id)
 
