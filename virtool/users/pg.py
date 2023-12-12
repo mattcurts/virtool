@@ -70,6 +70,7 @@ class SQLUser(Base):
         back_populates="user",
         lazy="joined",
         primaryjoin="and_(user_group.c.user_id == SQLUser.id, user_group.c.is_primary == True)",
+        viewonly=True,
     )
 
     primary_group: AssociationProxy[SQLGroup] = AssociationProxy(

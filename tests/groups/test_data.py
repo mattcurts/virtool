@@ -10,7 +10,7 @@ from virtool.groups.oas import UpdateGroupRequest
 from virtool.groups.pg import SQLGroup
 from virtool.pg.utils import get_row_by_id
 from virtool.users.oas import UpdateUserRequest
-from virtool.users.pg import user_group_associations
+from virtool.users.pg import UserGroup
 from virtool.users.utils import generate_base_permissions
 
 
@@ -118,18 +118,13 @@ class TestDelete:
         await data_layer.users.update(user.id, UpdateUserRequest(groups=[group.id]))
 
         async with (AsyncSession(pg) as session):
-            users = (
-                (
-                    await session.execute(
-                        select(user_group_associations).where(
-                            user_group_associations.c.group_id == group.id
-                        )
-                    )
+            user_associations = (
+                await session.execute(
+                    select(UserGroup).where(UserGroup.group_id == group.id)
                 )
-                .scalars()
-                .all()
-            )
-        assert len(users) == 1
+            ).all()
+
+        assert len(user_associations) == 1
 
         await data_layer.groups.delete(group.id)
 
@@ -137,16 +132,11 @@ class TestDelete:
 
         async with (AsyncSession(pg) as session):
             users = (
-                (
-                    await session.execute(
-                        select(user_group_associations).where(
-                            user_group_associations.c.group_id == group.id
-                        )
-                    )
+                await session.execute(
+                    select(UserGroup).where(UserGroup.group_id == group.id)
                 )
-                .scalars()
-                .all()
-            )
+            ).all()
+
         assert len(users) == 0
 
     async def test_not_found(self, data_layer: DataLayer):
